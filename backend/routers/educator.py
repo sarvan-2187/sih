@@ -6,7 +6,7 @@ from models.lms import (
     CourseOut, ModuleOut, LessonOut, serialize
 )
 from storage_service import generate_upload_url
-from auth import require_role, get_current_user
+from auth import require_verified_staff, is_verified_staff, get_current_user
 from routers.default import require_course_access
 from datetime import datetime, timezone
 from bson import ObjectId
@@ -19,7 +19,7 @@ async def require_course_owner(course_id: str, user=Depends(get_current_user)):
     course = await db.courses.find_one({"_id": ObjectId(course_id)})
     if not course:
         raise HTTPException(404, "Course not found")
-    if user.get("role") != "educator" or course["owner_uid"] != user["firebase_uid"]:
+    if not is_verified_staff(user) or course["owner_uid"] != user["firebase_uid"]:
         raise HTTPException(403, "Only the owning educator can modify this course")
     return course
 
@@ -34,14 +34,14 @@ async def require_lesson_owner(lesson_id: str, user=Depends(get_current_user)):
     course = await db.courses.find_one({"_id": module["course_id"]})
     if not course:
         raise HTTPException(404, "Course not found")
-    if user.get("role") != "educator" or course["owner_uid"] != user["firebase_uid"]:
+    if not is_verified_staff(user) or course["owner_uid"] != user["firebase_uid"]:
         raise HTTPException(403, "Only the owning educator can upload to this lesson")
     return course
 
 
 
 @router.post("/courses", response_model=CourseOut)
-async def create_course(course_data: CourseCreate, user=Depends(require_role("educator"))):
+async def create_course(course_data: CourseCreate, user=Depends(require_verified_staff)):
     db = get_db()
     new_course = {
         "title": course_data.title,
@@ -75,7 +75,7 @@ async def publish_course(course_id: str, course=Depends(require_course_owner)):
     return serialize(updated, CourseOut)
 
 @router.get("/educator/courses", response_model=list[CourseOut])
-async def list_educator_courses(user=Depends(require_role("educator"))):
+async def list_educator_courses(user=Depends(require_verified_staff)):
     db = get_db()
     cursor = db.courses.find({"owner_uid": user["firebase_uid"]}).sort("created_at", -1)
     courses = await cursor.to_list(length=100)
@@ -126,7 +126,7 @@ async def create_lesson(module_id: str, lesson_data: LessonCreate, user=Depends(
         raise HTTPException(404, "Module not found")
         
     course = await db.courses.find_one({"_id": module["course_id"]})
-    if not course or user.get("role") != "educator" or course["owner_uid"] != user["firebase_uid"]:
+    if not course or not is_verified_staff(user) or course["owner_uid"] != user["firebase_uid"]:
         raise HTTPException(403, "Only the owning educator can modify this course")
         
     existing_count = await db.lessons.count_documents({"module_id": ObjectId(module_id)})
@@ -190,7 +190,7 @@ async def get_upload_url(lesson_id: str, request: UploadUrlRequest, course=Depen
     }
 
 @router.post("/resources/{resource_id}/confirm")
-async def confirm_upload(resource_id: str, user=Depends(require_role("educator"))):
+async def confirm_upload(resource_id: str, user=Depends(require_verified_staff)):
     db = get_db()
     if db is None:
         raise HTTPException(status_code=500, detail="Database not connected")
@@ -280,7 +280,7 @@ async def delete_lesson(lesson_id: str, course=Depends(require_lesson_owner)):
     return {"message": "Lesson deleted"}
 
 @router.delete("/resources/{resource_id}")
-async def delete_resource(resource_id: str, user=Depends(require_role("educator"))):
+async def delete_resource(resource_id: str, user=Depends(require_verified_staff)):
     db = get_db()
     resource = await db.resources.find_one({"_id": ObjectId(resource_id)})
     if not resource:

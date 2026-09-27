@@ -7,6 +7,7 @@ import { LogOut } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { clearSignupRole } from '@/lib/roles';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function LearnerOnboarding() {
@@ -53,6 +54,7 @@ export default function LearnerOnboarding() {
       });
 
       if (response.ok) {
+        clearSignupRole();
         navigate('/dashboard');
       } else {
         const errorData = await response.json();

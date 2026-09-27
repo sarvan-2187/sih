@@ -13,6 +13,18 @@ import ResourceLibrary from './pages/ResourceLibrary';
 import VideoPlayerPage from './pages/VideoPlayerPage';
 import DocumentViewerPage from './pages/DocumentViewerPage';
 import NotFound from './pages/NotFound';
+import AdminMockup from './pages/AdminMockup';
+import AdminPage from './pages/AdminPage';
+import VerificationPage from './pages/VerificationPage';
+import MentorshipPage from './pages/MentorshipPage';
+import StudentAnalyticsPage from './pages/StudentAnalyticsPage';
+import StudentJourneyPage from './pages/StudentJourneyPage';
+import ClassroomsPage from './pages/ClassroomsPage';
+import ClassroomDetailPage from './pages/ClassroomDetailPage';
+import ClassroomJourneyPage from './pages/ClassroomJourneyPage';
+import JoinClassroomPage from './pages/JoinClassroomPage';
+import { STAFF_ROLES, isStaff, onboardingPath } from './lib/roles';
+import type { Role } from './lib/roles';
 import QuantumLibrary from './pages/QuantumLibrary';
 import CourseCatalog from './pages/CourseCatalog';
 import CourseDetail from './pages/CourseDetail';
@@ -69,9 +81,10 @@ const queryClient = new QueryClient({
 
 
 // Protected Route Wrapper
-function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode, allowedRole?: 'educator' | 'learner' }) {
+function ProtectedRoute({ children, allowedRoles, requireVerified }: { children: React.ReactNode, allowedRoles?: Role[], requireVerified?: boolean }) {
   const { currentUser, loading } = useAuth();
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [verificationStatus, setVerificationStatus] = useState<string | null>(null);
   const [roleLoading, setRoleLoading] = useState(true);
 
   useEffect(() => {
@@ -99,9 +112,10 @@ function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode, 
         if (response.ok && isMounted) {
           const data = await response.json();
           setUserRole(data.role);
+          setVerificationStatus(data.verification?.status ?? null);
         } else if (response.status === 404 && isMounted) {
           if (!window.location.pathname.startsWith('/onboarding')) {
-            window.location.href = '/onboarding/learner';
+            window.location.href = onboardingPath();
           }
         }
       } catch (e) {
@@ -121,7 +135,7 @@ function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode, 
       controller.abort();
       clearTimeout(timeoutId);
     };
-  }, [currentUser, allowedRole]);
+  }, [currentUser]);
 
   if (loading || roleLoading) {
     return (
@@ -135,8 +149,12 @@ function ProtectedRoute({ children, allowedRole }: { children: React.ReactNode, 
   
   if (!currentUser) return <Navigate to="/login" replace />;
   
-  if (allowedRole && userRole && userRole !== allowedRole) {
-    return <Navigate to="/courses" replace />;
+  if (allowedRoles && userRole && !allowedRoles.includes(userRole as Role)) {
+    return <Navigate to={userRole === 'admin' ? '/admin' : '/courses'} replace />;
+  }
+
+  if (requireVerified && isStaff(userRole) && verificationStatus !== 'approved') {
+    return <Navigate to="/verification" replace />;
   }
   
   return children;
@@ -152,6 +170,12 @@ function App() {
               <Routes>
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
+              <Route path="/admin-demo" element={<AdminMockup />} />
+              <Route path="/admin" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminPage />
+                </ProtectedRoute>
+              } />
               <Route path="/signup" element={<Signup />} />
               <Route path="/verify-email" element={<VerifyEmail />} />
               <Route path="/forgot-password" element={<ForgotPassword />} />
@@ -228,8 +252,49 @@ function App() {
                     <ProfilePage />
                   </ProtectedRoute>
                 } />
+                <Route path="/verification" element={
+                  <ProtectedRoute allowedRoles={STAFF_ROLES}>
+                    <VerificationPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/mentorship" element={
+                  <ProtectedRoute allowedRoles={STAFF_ROLES} requireVerified>
+                    <MentorshipPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/educator/analytics" element={
+                  <ProtectedRoute allowedRoles={STAFF_ROLES} requireVerified>
+                    <StudentAnalyticsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/educator/analytics/:courseId/:studentUid" element={
+                  <ProtectedRoute allowedRoles={STAFF_ROLES} requireVerified>
+                    <StudentJourneyPage />
+                  </ProtectedRoute>
+                } />
+                {/* Institutional classrooms: teachers (verified staff) manage, learners join with consent */}
+                <Route path="/classrooms" element={
+                  <ProtectedRoute allowedRoles={['learner', ...STAFF_ROLES]} requireVerified>
+                    <ClassroomsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/classrooms/join" element={
+                  <ProtectedRoute allowedRoles={['learner', ...STAFF_ROLES]}>
+                    <JoinClassroomPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/classrooms/:classroomId" element={
+                  <ProtectedRoute allowedRoles={STAFF_ROLES} requireVerified>
+                    <ClassroomDetailPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/classrooms/:classroomId/students/:studentUid" element={
+                  <ProtectedRoute allowedRoles={STAFF_ROLES} requireVerified>
+                    <ClassroomJourneyPage />
+                  </ProtectedRoute>
+                } />
                 <Route path="/educator/courses" element={
-                  <ProtectedRoute allowedRole="educator">
+                  <ProtectedRoute allowedRoles={STAFF_ROLES} requireVerified>
                     <EducatorDashboard />
                   </ProtectedRoute>
                 } />
@@ -239,7 +304,7 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/resources" element={
-                  <ProtectedRoute allowedRole="educator">
+                  <ProtectedRoute allowedRoles={STAFF_ROLES} requireVerified>
                     <ResourceLibrary />
                   </ProtectedRoute>
                 } />
@@ -271,22 +336,22 @@ function App() {
                   </ProtectedRoute>
                 } />
                 <Route path="/algorithms" element={
-                  <ProtectedRoute allowedRole="educator">
+                  <ProtectedRoute allowedRoles={STAFF_ROLES} requireVerified>
                     <AlgorithmExplorerLandingPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/algorithms/:slug" element={
-                  <ProtectedRoute allowedRole="educator">
+                  <ProtectedRoute allowedRoles={STAFF_ROLES} requireVerified>
                     <AlgorithmDetailPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/constellation" element={
-                  <ProtectedRoute allowedRole="learner">
+                  <ProtectedRoute allowedRoles={['learner']}>
                     <ConstellationPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/constellation/:slug" element={
-                  <ProtectedRoute allowedRole="learner">
+                  <ProtectedRoute allowedRoles={['learner']}>
                     <AlgorithmDetailPage />
                   </ProtectedRoute>
                 } />
@@ -351,12 +416,12 @@ function App() {
                 </ProtectedRoute>
               } />
               <Route path="/courses/:id/preview" element={
-                <ProtectedRoute allowedRole="educator">
+                <ProtectedRoute allowedRoles={STAFF_ROLES} requireVerified>
                   <CourseViewer />
                 </ProtectedRoute>
               } />
               <Route path="/educator/courses/:id" element={
-                <ProtectedRoute allowedRole="educator">
+                <ProtectedRoute allowedRoles={STAFF_ROLES} requireVerified>
                   <CourseEditor />
                 </ProtectedRoute>
               } />

@@ -156,6 +156,8 @@ async def seed_demo_user_history(db: AsyncIOMotorDatabase, firebase_uid: str) ->
         }
     ]
 
+    # Idempotent: re-running the seed replaces its own attempts instead of duplicating them.
+    await db.quiz_attempts.delete_many({"firebase_uid": firebase_uid, "demo_seed": True})
     for att in attempts_data:
         att_time = now - timedelta(days=att["days_ago"])
         doc = {
@@ -169,7 +171,8 @@ async def seed_demo_user_history(db: AsyncIOMotorDatabase, firebase_uid: str) ->
             "answers": att["answers"],
             "submitted_at": att_time,
             "started_at": att_time - timedelta(minutes=5),
-            "mode": "practice"
+            "mode": "practice",
+            "demo_seed": True
         }
         await db.quiz_attempts.insert_one(doc)
 
@@ -247,6 +250,9 @@ async def seed_demo_user_history(db: AsyncIOMotorDatabase, firebase_uid: str) ->
                 "firebase_uid": firebase_uid,
                 "current_streak": 7,
                 "longest_streak": 12,
+                "max_streak": 12,  # field name the streak engine reads
+                # Same shape the streak engine writes: the current 7-day run plus an earlier 12-day run.
+                "history_dates": sorted({(now - timedelta(days=d)).strftime("%Y-%m-%d") for d in [*range(7), *range(12, 24)]}),
                 "last_activity_date": today_date,
                 "freeze_tokens": 2,
                 "freeze_used_dates": []

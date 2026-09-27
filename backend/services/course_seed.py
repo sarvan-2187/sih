@@ -196,9 +196,10 @@ async def seed_domain_courses(db: AsyncIOMotorDatabase) -> dict:
     if db is None:
         return {"status": "error", "message": "Database not connected"}
     
-    # Remove any courses not in DOMAIN_COURSES to keep MongoDB strictly synced
+    # Remove seeded catalog courses no longer in DOMAIN_COURSES. Only touch courses this seeder owns:
+    # educator-created courses must survive restarts.
     desired_titles = set(c["title"] for c in DOMAIN_COURSES)
-    old_courses = await db.courses.find().to_list(1000)
+    old_courses = await db.courses.find({"owner_uid": SYSTEM_EDUCATOR_UID}).to_list(1000)
     for old_c in old_courses:
         if old_c.get("title") not in desired_titles:
             c_id = old_c["_id"]
@@ -219,7 +220,7 @@ async def seed_domain_courses(db: AsyncIOMotorDatabase) -> dict:
     created_resources = 0
 
     for c_data in DOMAIN_COURSES:
-        existing_course = await db.courses.find_one({"title": c_data["title"]})
+        existing_course = await db.courses.find_one({"title": c_data["title"], "owner_uid": SYSTEM_EDUCATOR_UID})
         
         course_doc = {
             "title": c_data["title"],

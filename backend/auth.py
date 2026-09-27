@@ -127,12 +127,28 @@ async def get_current_user(decoded_token: dict = Depends(get_verified_firebase_u
     user_doc["_id"] = str(user_doc.get("_id", uid))
     return user_doc
 
-def require_role(required_role: str):
+def require_role(*allowed_roles: str):
     """
-    Dependency generator for RBAC. Returns a dependency that verifies the user has the required role.
+    Dependency generator for RBAC. Returns a dependency that verifies the user has one of the allowed roles.
     """
     async def role_checker(user: dict = Depends(get_current_user)):
-        if user.get("role") != required_role:
+        if user.get("role") not in allowed_roles:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
         return user
     return role_checker
+
+
+# Educators and researchers share educator features, but only after identity verification.
+STAFF_ROLES = ("educator", "researcher")
+
+
+def is_verified_staff(user: dict) -> bool:
+    return user.get("role") in STAFF_ROLES and (user.get("verification") or {}).get("status") == "approved"
+
+
+async def require_verified_staff(user: dict = Depends(get_current_user)):
+    if user.get("role") not in STAFF_ROLES:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions")
+    if not is_verified_staff(user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Identity verification required")
+    return user

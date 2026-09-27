@@ -8,6 +8,7 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
 import { Leaderboard } from '../modules/quantum-puzzles/components/Leaderboard';
+import { isStaff } from '@/lib/roles';
 
 export default function Dashboard() {
   const { currentUser } = useAuth();
@@ -85,11 +86,11 @@ export default function Dashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className={userData?.role === 'educator' ? "lg:col-span-3" : "lg:col-span-2"}>
+          <div className={isStaff(userData?.role) ? "lg:col-span-3" : "lg:col-span-2"}>
             {/* Quantum News Daily Pulse */}
-            <QuantumNewsRadar variant={userData?.role === 'educator' ? "educator" : "student"} />
+            <QuantumNewsRadar variant={isStaff(userData?.role) ? "educator" : "student"} />
           </div>
-          {userData?.role !== 'educator' && (
+          {!isStaff(userData?.role) && (
             <div>
               {/* Leaderboard Column */}
               <Leaderboard />

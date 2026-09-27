@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { clearSignupRole } from '@/lib/roles';
 import { useAuth } from '../context/AuthContext';
 import { auth } from '../firebase';
 import { Button } from '@/components/ui/button';
@@ -13,7 +14,8 @@ export default function FacultyOnboarding() {
   const [name, setName] = useState('');
   const [age, setAge] = useState('');
   const [topic, setTopic] = useState('');
-  const role = 'educator';
+  const [searchParams] = useSearchParams();
+  const role = searchParams.get('role') === 'researcher' ? 'researcher' : 'educator';
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { currentUser } = useAuth();
@@ -53,7 +55,8 @@ export default function FacultyOnboarding() {
       });
 
       if (response.ok) {
-        navigate('/dashboard');
+        clearSignupRole();
+        navigate('/verification');
       } else {
         const errorData = await response.json();
         setError(errorData.detail || "Failed to save onboarding data");
@@ -182,7 +185,7 @@ export default function FacultyOnboarding() {
               </Button>
               <div className="text-center mt-4">
                 <Link to="/onboarding/learner" className="text-sm text-emerald-500 hover:text-emerald-400 hover:underline">
-                  Not an educator? Continue as a Learner
+                  Not {role === 'educator' ? 'an educator' : 'a researcher'}? Continue as a Learner
                 </Link>
               </div>
             </form>

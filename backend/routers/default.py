@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from database import get_db
 from storage_service import generate_download_url
-from auth import get_current_user, require_role
+from auth import get_current_user, require_role, require_verified_staff
 from bson import ObjectId
 from datetime import datetime, timezone
 from models.lms import CourseOut, serialize
@@ -298,7 +298,7 @@ async def get_resource(resource_id: str, user=Depends(get_current_user)):
 async def list_resources(
     title: str = None,
     resource_type: str = None,
-    user=Depends(require_role("educator"))
+    user=Depends(require_verified_staff)
 ):
     db = get_db()
     if db is None:

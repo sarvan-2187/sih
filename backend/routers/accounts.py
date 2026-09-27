@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from database import get_db
-from auth import get_verified_firebase_user, get_current_user
+from auth import get_verified_firebase_user, get_current_user, STAFF_ROLES
+from services.verification_rules import public_verification
 
 router = APIRouter(prefix="/api", tags=["Accounts"])
 
@@ -21,20 +22,11 @@ async def save_onboarding(
         raise HTTPException(status_code=400, detail="User already onboarded")
         
     requested_role = user_data.get("role", "learner")
-    assigned_role = "learner"
-    
-    if requested_role == "educator":
-        # Institutional domains + common local dev domains for testing
-        ALLOWED_FACULTY_DOMAINS = ["amrita.edu", "ch.students.amrita.edu", "ch.amrita.edu", "gmail.com", "example.com"]
-        domain = email.split("@")[-1].lower() if email else ""
-        
-        is_allowed = any(domain == d or domain.endswith("." + d) for d in ALLOWED_FACULTY_DOMAINS)
-        if not is_allowed:
-            raise HTTPException(status_code=400, detail="Faculty accounts require a verified institutional email address")
-        # In local development, check email_verified if available
-        if not email_verified and os.environ.get("ENV") == "production":
-            raise HTTPException(status_code=400, detail="Faculty accounts require a verified email address. Please verify your email.")
-        assigned_role = "educator"
+    # Educators/researchers pick their role freely; educator features stay locked until
+    # identity verification (routers/verification.py) is approved by an admin. Admin is never self-selectable.
+    assigned_role = requested_role if requested_role in STAFF_ROLES else "learner"
+    if assigned_role in STAFF_ROLES and not email_verified:
+        raise HTTPException(status_code=400, detail="Please verify your email address first.")
 
     user_dict = {
         "firebase_uid": firebase_uid,
@@ -44,12 +36,16 @@ async def save_onboarding(
         "interested_topic": user_data.get("topic"),
         "role": assigned_role
     }
+    if assigned_role in STAFF_ROLES:
+        user_dict["verification"] = {"status": "unsubmitted"}
     
     await db.users.insert_one(user_dict)
     return {"message": "User saved successfully"}
 
 @router.get("/user/me")
 async def get_user(user: dict = Depends(get_current_user)):
+    if "verification" in user:
+        user = {**user, "verification": public_verification(user["verification"])}
     return user
 
 @router.patch("/user/me")
@@ -74,4 +70,6 @@ async def update_user(
     updated_user = await db.users.find_one({"firebase_uid": firebase_uid})
     if updated_user and "_id" in updated_user:
         updated_user["_id"] = str(updated_user["_id"])
+    if updated_user and "verification" in updated_user:
+        updated_user["verification"] = public_verification(updated_user["verification"])
     return updated_user

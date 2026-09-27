@@ -12,6 +12,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { FaUser, FaEnvelope, FaGraduationCap, FaCompass } from 'react-icons/fa';
+import { isStaff } from '@/lib/roles';
 
 export default function ProfilePage() {
   const { currentUser } = useAuth();
@@ -58,7 +59,7 @@ export default function ProfilePage() {
         if (response.ok) {
           const data = await response.json();
           setUserData(data);
-          if (data.role !== 'educator') {
+          if (!isStaff(data.role)) {
             loadGamification();
           }
         }
@@ -71,7 +72,7 @@ export default function ProfilePage() {
     fetchUserData();
   }, [currentUser]);
 
-  const isEducator = userData?.role === 'educator';
+  const isEducator = isStaff(userData?.role);
 
   return (
     <div className={cn(

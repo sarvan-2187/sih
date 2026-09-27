@@ -24,9 +24,10 @@ from services.badge_engine import badge_engine
 async def cleanup_orphaned_data(db):
     """Remove enrollment and lesson_progress records that reference deleted courses/lessons."""
     try:
-        courses = await db.courses.find({}, {"_id": 1}).to_list(200)
+        # Load every valid id (ids only): a capped list would mark real enrollments/progress as orphans.
+        courses = await db.courses.find({}, {"_id": 1}).to_list(None)
         valid_course_ids = {c["_id"] for c in courses}
-        lessons = await db.lessons.find({}, {"_id": 1}).to_list(2000)
+        lessons = await db.lessons.find({}, {"_id": 1}).to_list(None)
         valid_lesson_ids = {l["_id"] for l in lessons}
 
         # Enrollments pointing to deleted courses
@@ -252,8 +253,18 @@ from routers.quantum_execution_router import router as quantum_execution_router
 from routers.qforge_router import router as qforge_router
 from routers.reviews import router as reviews_router
 from routers.quantum_optimizer import router as quantum_optimizer_router
+from routers.verification import router as verification_router
+from routers.admin import router as admin_router
+from routers.mentorship import router as mentorship_router
+from routers.educator_analytics import router as educator_analytics_router
+from routers.classrooms import router as classrooms_router
 
 app.include_router(accounts_router)
+app.include_router(verification_router)
+app.include_router(admin_router)
+app.include_router(mentorship_router)
+app.include_router(educator_analytics_router)
+app.include_router(classrooms_router)
 app.include_router(educator_router)
 app.include_router(default_router)
 app.include_router(live_router)

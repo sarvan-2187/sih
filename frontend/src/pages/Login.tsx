@@ -10,7 +10,17 @@ import { Label } from '@/components/ui/label';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { FaGithub } from 'react-icons/fa';
 import { FcGoogle } from 'react-icons/fc';
-import { Eye, EyeOff } from 'lucide-react';
+import { isStaff, onboardingPath } from '@/lib/roles';
+import { Eye, EyeOff, GraduationCap, Presentation, FlaskConical, ShieldCheck } from 'lucide-react';
+
+const DEMO_PASSWORD = 'Demo@1234';
+const DEMO_ADMIN_EMAIL = 'demo-admin@gmail.com';
+const DEMO_ACCOUNTS = [
+  { label: 'Student', email: 'demo-student@gmail.com', icon: GraduationCap },
+  { label: 'Educator', email: 'demo-educator@gmail.com', icon: Presentation },
+  { label: 'Researcher', email: 'demo-researcher@gmail.com', icon: FlaskConical },
+  { label: 'Admin', email: DEMO_ADMIN_EMAIL, icon: ShieldCheck, note: 'UI mockup' },
+];
 
 export default function Login() {
   const navigate = useNavigate();
@@ -47,9 +57,12 @@ export default function Login() {
         }
       });
       if (response.ok) {
-        navigate('/dashboard');
+        const data = await response.json();
+        if (data.role === 'admin') navigate('/admin');
+        else if (isStaff(data.role) && data.verification?.status !== 'approved') navigate('/verification');
+        else navigate('/dashboard');
       } else if (response.status === 404) {
-        navigate(role === 'educator' ? '/onboarding/faculty' : '/onboarding/learner');
+        navigate(onboardingPath(role));
       } else {
         const errorData = await response.json().catch(() => ({}));
         setError(errorData.detail || "Authentication failed. Please try again later.");
@@ -62,19 +75,34 @@ export default function Login() {
     }
   };
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const loginWithEmail = async (loginEmail: string, loginPassword: string) => {
     setError('');
+    // Admin demo is a read-only UI mockup, never a real account (a real admin could edit the whole site)
+    if (loginEmail.trim().toLowerCase() === DEMO_ADMIN_EMAIL && loginPassword === DEMO_PASSWORD) {
+      navigate('/admin-demo');
+      return;
+    }
     isAuthenticating.current = true;
     setLoading(true);
     try {
-      const result = await signInWithEmailAndPassword(auth, email, password);
+      const result = await signInWithEmailAndPassword(auth, loginEmail, loginPassword);
       await handleLoginSuccess(result.user);
     } catch (err: any) {
       setError(err.message || "Failed to sign in. Please check your credentials.");
       setLoading(false);
       isAuthenticating.current = false;
     }
+  };
+
+  const handleEmailLogin = (e: React.FormEvent) => {
+    e.preventDefault();
+    loginWithEmail(email, password);
+  };
+
+  const handleDemoLogin = (demoEmail: string) => {
+    setEmail(demoEmail);
+    setPassword(DEMO_PASSWORD);
+    loginWithEmail(demoEmail, DEMO_PASSWORD);
   };
 
   const handleGoogleLogin = async () => {
@@ -167,6 +195,9 @@ export default function Login() {
               <ToggleGroupItem value="educator" className="flex-1 rounded-sm data-[state=on]:bg-background data-[state=on]:shadow-sm h-10">
                 Educator
               </ToggleGroupItem>
+              <ToggleGroupItem value="researcher" className="flex-1 rounded-sm data-[state=on]:bg-background data-[state=on]:shadow-sm h-10">
+                Researcher
+              </ToggleGroupItem>
             </ToggleGroup>
 
             {error && (
@@ -221,6 +252,40 @@ export default function Login() {
               {loading ? "Signing in..." : "Sign in"}
             </Button>
           </form>
+
+          <div className="rounded-xl border border-border/50 bg-muted/40 p-4 space-y-3">
+            <div className="flex items-baseline justify-between gap-2">
+              <p className="text-sm font-medium">Demo accounts</p>
+              <p className="text-xs text-muted-foreground">
+                Password: <span className="font-mono text-foreground">{DEMO_PASSWORD}</span>
+              </p>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {DEMO_ACCOUNTS.map(({ label, email: demoEmail, icon: Icon, note }) => (
+                <button
+                  key={demoEmail}
+                  type="button"
+                  onClick={() => handleDemoLogin(demoEmail)}
+                  disabled={loading}
+                  className="flex items-start gap-2 rounded-lg border border-border/50 bg-card p-2.5 text-left transition-colors hover:border-primary/40 hover:bg-accent disabled:opacity-50"
+                >
+                  <Icon className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
+                  <span className="min-w-0">
+                    <span className="flex items-center gap-1.5 text-sm font-medium">
+                      {label}
+                      {note && (
+                        <span className="rounded bg-primary/10 px-1.5 py-px text-[10px] uppercase tracking-wide text-primary">{note}</span>
+                      )}
+                    </span>
+                    <span className="block truncate font-mono text-[11px] text-muted-foreground">{demoEmail}</span>
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Click an account to sign in. Researchers get every educator feature plus mentorship from verified professors. The Admin demo is a read-only UI mockup showing what admins can access.
+            </p>
+          </div>
 
           {role === 'learner' && (
             <>

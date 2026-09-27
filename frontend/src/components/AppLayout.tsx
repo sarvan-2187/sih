@@ -3,7 +3,8 @@ import { useAuth } from '../context/AuthContext';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { auth } from '../firebase';
 import { useEffect, useState } from 'react';
-import { FaBookOpen, FaCog, FaSignOutAlt, FaUpload, FaHome, FaFolderOpen, FaFlask, FaProjectDiagram, FaStickyNote, FaGlobe, FaBolt, FaFire, FaBook, FaChartLine, FaPuzzlePiece, FaUser, FaSatelliteDish, FaLightbulb, FaShareAlt, FaStopwatch, FaBrain } from 'react-icons/fa';
+import { FaBookOpen, FaCog, FaSignOutAlt, FaUpload, FaHome, FaFolderOpen, FaFlask, FaProjectDiagram, FaStickyNote, FaGlobe, FaBolt, FaFire, FaBook, FaChartLine, FaPuzzlePiece, FaUser, FaSatelliteDish, FaLightbulb, FaShareAlt, FaStopwatch, FaBrain, FaShieldAlt, FaUserFriends, FaChartBar, FaSchool } from 'react-icons/fa';
+import { isStaff } from '@/lib/roles';
 import { Separator } from '@/components/ui/separator';
 import { fetchXpSummary, fetchStreakStatus } from '@/features/gamification/api';
 import type { XpSummary, StreakStatus } from '@/features/gamification/types/gamification.types';
@@ -44,7 +45,7 @@ export default function AppLayout() {
         if (response.ok) {
           const data = await response.json();
           setUserData(data);
-          if (data.role !== 'educator') {
+          if (!isStaff(data.role)) {
             fetchGamificationHeader();
           }
         }
@@ -64,7 +65,7 @@ export default function AppLayout() {
     fetchUserData();
     
     const handleXpUpdate = () => {
-      if (userData?.role !== 'educator') {
+      if (!isStaff(userData?.role)) {
         fetchGamificationHeader();
       }
     };
@@ -85,7 +86,10 @@ export default function AppLayout() {
     }
   };
 
-  const isEducator = userData?.role === 'educator';
+  // Researchers get the educator tool set; both need identity verification to use it.
+  const isEducator = isStaff(userData?.role);
+  const isResearcher = userData?.role === 'researcher';
+  const isVerified = userData?.verification?.status === 'approved';
 
   return (
     <SidebarProvider>
@@ -173,6 +177,16 @@ export default function AppLayout() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               )}
+              {!isEducator && userData?.role === 'learner' && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname.startsWith('/classrooms')} tooltip="My Classrooms">
+                    <Link to="/classrooms">
+                      <FaSchool />
+                      <span>My Classrooms</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               {!isEducator && (
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={location.pathname === '/constellation'} tooltip="Algorithm Constellation">
@@ -228,13 +242,46 @@ export default function AppLayout() {
 
           {isEducator && (
             <SidebarGroup>
-              <SidebarGroupLabel>Educator Tools</SidebarGroupLabel>
+              <SidebarGroupLabel>{isResearcher ? 'Researcher Tools' : 'Educator Tools'}</SidebarGroupLabel>
               <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname === '/verification'} tooltip="Identity Verification">
+                    <Link to="/verification">
+                      <FaShieldAlt />
+                      <span>{isVerified ? 'Verified' : 'Verify Identity'}</span>
+                      {userData && !isVerified && <span className="ml-auto h-2 w-2 rounded-full bg-primary" aria-label="Action needed" />}
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname === '/mentorship'} tooltip="Mentorship">
+                    <Link to="/mentorship">
+                      <FaUserFriends />
+                      <span>Mentorship</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild isActive={location.pathname === '/educator/courses'} tooltip="Manage Courses">
                     <Link to="/educator/courses">
                       <FaUpload />
                       <span>Manage Courses</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname.startsWith('/classrooms')} tooltip="Classrooms">
+                    <Link to="/classrooms">
+                      <FaSchool />
+                      <span>Classrooms</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname.startsWith('/educator/analytics')} tooltip="Student Analytics">
+                    <Link to="/educator/analytics">
+                      <FaChartBar />
+                      <span>Student Analytics</span>
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>

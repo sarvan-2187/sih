@@ -53,4 +53,33 @@ async def create_all_indexes(db: AsyncIOMotorDatabase):
     await db.qstudio_rag_chunks.create_index("chunk_id", unique=True)
     await db.qstudio_rag_messages.create_index([("study_space_id", 1), ("created_at", 1)])
 
+    # Institutional classrooms
+    await db.classrooms.create_index("join_code", unique=True)
+    await db.classrooms.create_index("owner_uid")
+    await db.classrooms.create_index("co_teacher_uids")
+    await db.classroom_members.create_index([("classroom_id", 1), ("student_uid", 1)], unique=True)
+    await db.classroom_members.create_index("student_uid")
+    await db.classroom_invites.create_index([("classroom_id", 1), ("email", 1)], unique=True)
+    await db.audit_log.create_index([("student_uid", 1), ("at", -1)])
+
+    # Q-Rating: weekly contests and the rating ledger
+    await db.qrating_tasks.create_index("slug", unique=True)
+    await db.qrating_tasks.create_index("pillar")
+    await db.qrating_rounds.create_index("round_number", unique=True)
+    await db.qrating_rounds.create_index([("starts_at", -1)])
+    await db.qrating_rounds.create_index("status")
+    await db.qrating_registrations.create_index([("round_id", 1), ("firebase_uid", 1)], unique=True)
+    # Submissions are append-only; this index backs both scoring and the public ledger.
+    await db.qrating_submissions.create_index([("round_id", 1), ("firebase_uid", 1), ("task_id", 1)])
+    await db.qrating_submissions.create_index([("firebase_uid", 1), ("submitted_at", -1)])
+    await db.qrating_standings.create_index([("round_id", 1), ("firebase_uid", 1)], unique=True)
+    await db.qrating_standings.create_index([("round_id", 1), ("rank", 1)])
+    # The unique key is what makes finalize_round() safe to call twice.
+    await db.qrating_history.create_index("idempotent_key", unique=True)
+    await db.qrating_history.create_index([("firebase_uid", 1), ("created_at", -1)])
+    await db.qrating_profiles.create_index("firebase_uid", unique=True)
+    await db.qrating_profiles.create_index("handle", unique=True, sparse=True)
+    await db.qrating_profiles.create_index([("rating", -1)])
+    await db.qrating_seasons.create_index("season_id", unique=True)
+
     print("All MongoDB collection indexes created successfully!")

@@ -11,6 +11,7 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { FaGithub } from 'react-icons/fa';
 import { FcGoogle } from 'react-icons/fc';
 import { Eye, EyeOff } from 'lucide-react';
+import { onboardingPath, rememberSignupRole } from '@/lib/roles';
 
 export default function Signup() {
   const navigate = useNavigate();
@@ -50,7 +51,7 @@ export default function Signup() {
       if (response.ok) {
         navigate('/dashboard');
       } else if (response.status === 404) {
-        navigate(role === 'educator' ? '/onboarding/faculty' : '/onboarding/learner');
+        navigate(onboardingPath(role));
       } else {
         const errorData = await response.json().catch(() => ({}));
         setError(errorData.detail || "Authentication failed. Please try again later.");
@@ -72,14 +73,10 @@ export default function Signup() {
       return;
     }
 
-    if (role === 'educator' && !validateFacultyDomain(email)) {
-      setError("Educator accounts require a verified institutional email address.");
-      return;
-    }
-
     isAuthenticating.current = true;
     setLoading(true);
     try {
+      rememberSignupRole(role);
       const result = await createUserWithEmailAndPassword(auth, email, password);
       await sendEmailVerification(result.user);
       
@@ -196,7 +193,15 @@ export default function Signup() {
               <ToggleGroupItem value="educator" className="flex-1 rounded-sm data-[state=on]:bg-background data-[state=on]:shadow-sm h-10">
                 Educator
               </ToggleGroupItem>
+              <ToggleGroupItem value="researcher" className="flex-1 rounded-sm data-[state=on]:bg-background data-[state=on]:shadow-sm h-10">
+                Researcher
+              </ToggleGroupItem>
             </ToggleGroup>
+            {role !== 'learner' && (
+              <p className="text-xs text-muted-foreground -mt-3">
+                {role === 'educator' ? 'Educator' : 'Researcher'} tools unlock after a quick identity verification (institutional email, ID check, and ORCID or a faculty ID document).
+              </p>
+            )}
 
             {error && (
               <div className="p-3 rounded-md bg-destructive/15 text-destructive text-sm font-medium">

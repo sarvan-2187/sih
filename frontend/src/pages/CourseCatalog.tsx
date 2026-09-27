@@ -10,6 +10,7 @@ import { listPublishedCourses, listEnrolledCourses, getCourseProgress, listEduca
 import { CertificateGenerator } from '../components/CertificateGenerator';
 import type { Course } from '../api/courses';
 import { DEMO_COURSES } from '@/data/demoDomainCourses';
+import { isStaff } from '@/lib/roles';
 
 const DOMAIN_CATEGORIES = [
   { id: 'All', label: 'All Domains' },
@@ -64,7 +65,7 @@ export default function CourseCatalog() {
         });
         setCompletedCourses(completed);
 
-        if (role === 'educator') {
+        if (isStaff(role)) {
           try {
             const teachings = await listEducatorCourses();
             setMyTeachings(teachings);
@@ -103,11 +104,11 @@ export default function CourseCatalog() {
       </div>
       
       <Tabs defaultValue="all" className="w-full">
-        <TabsList className={`mb-6 flex w-full max-w-3xl justify-start sm:grid overflow-x-auto h-auto sm:h-10 p-1 ${userRole === 'educator' ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
+        <TabsList className={`mb-6 flex w-full max-w-3xl justify-start sm:grid overflow-x-auto h-auto sm:h-10 p-1 ${isStaff(userRole) ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
           <TabsTrigger value="all">All Courses</TabsTrigger>
           <TabsTrigger value="enrolled">My Enrolled Courses</TabsTrigger>
           <TabsTrigger value="certificates">My Certificates</TabsTrigger>
-          {userRole === 'educator' && <TabsTrigger value="teachings">My Teachings</TabsTrigger>}
+          {isStaff(userRole) && <TabsTrigger value="teachings">My Teachings</TabsTrigger>}
         </TabsList>
         
         <TabsContent value="all" className="mt-0 space-y-6">
@@ -262,7 +263,7 @@ export default function CourseCatalog() {
           )}
         </TabsContent>
 
-        {userRole === 'educator' && (
+        {isStaff(userRole) && (
           <TabsContent value="teachings" className="mt-0 space-y-4">
             {loading ? (
               <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
