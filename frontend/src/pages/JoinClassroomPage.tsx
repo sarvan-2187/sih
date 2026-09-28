@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { Check, Loader2, Lock, School } from 'lucide-react';
+import { PageShell } from '@/components/explorer';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { apiErrorMessage } from '@/api/verification';
@@ -43,8 +44,7 @@ export default function JoinClassroomPage() {
     : null;
 
   return (
-    <div className="w-full py-10 px-4 sm:px-6 font-sans">
-      <div className="max-w-2xl mx-auto flex flex-col gap-6">
+    <PageShell width="reading" gap="tight">
         {error && (
           <div className="flex flex-col gap-3">
             <div className="rounded-md bg-destructive/15 p-3 text-sm text-destructive">{error}</div>
@@ -110,7 +110,6 @@ export default function JoinClassroomPage() {
             </CardContent>
           </Card>
         )}
-      </div>
-    </div>
+    </PageShell>
   );
 }

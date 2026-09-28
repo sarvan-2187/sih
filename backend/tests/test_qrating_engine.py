@@ -289,3 +289,20 @@ def test_peer_deltas_stay_zero_sum_over_the_eligible_subset():
     deltas = e.peer_deltas(ranked, eligible=["u0", "u1"])
     assert set(deltas) == {"u0", "u1"}
     assert sum(deltas.values()) == pytest.approx(0.0, abs=1e-6)
+
+
+def test_ratings_and_deltas_are_whole_numbers_that_add_up():
+    # The public ledger has to audit exactly: old + delta == new, with no
+    # displayed rating that disagrees with the tier beside it.
+    out = e.apply_round(_equal_field(11, rating=1200.0, rounds_played=10), {})
+    for change in out.values():
+        assert isinstance(change["delta"], int)
+        assert isinstance(change["new_rating"], int)
+        assert isinstance(change["old_rating"], int)
+        assert change["old_rating"] + change["delta"] == change["new_rating"]
+
+
+def test_pillar_ratings_are_whole_numbers_too():
+    value = e.pillar_rating(None, 0, [{"difficulty": 1437, "solved": True}])
+    assert isinstance(value, int)
+    assert e.pillar_rating(1250, 3, []) == 1250

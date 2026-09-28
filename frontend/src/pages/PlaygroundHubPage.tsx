@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { GripHorizontal, Terminal, ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { PageHero, PageShell } from '@/components/explorer';
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
 
@@ -24,21 +25,12 @@ const PlaygroundHubPage: React.FC = () => {
   ];
 
   return (
-    <div className={cn(
-      "min-h-screen py-24 px-6 md:px-16 w-full transition-colors duration-300",
-      theme === 'dark' ? "bg-zinc-950 text-white" : "bg-zinc-100 text-zinc-900"
-    )}>
-      <div className="max-w-[1600px] mx-auto">
-        <motion.h1 
-          className="text-4xl md:text-5xl font-sans tracking-tight mb-16 text-center"
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6 }}
-        >
-          Quantum Playground Hub
-        </motion.h1>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+    <PageShell>
+      <PageHero
+        title="Quantum Playground Hub"
+        subtitle="Build circuits by hand, run code, forge a processor, or route a job to real hardware."
+      />
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl">
           {playgrounds.map((pg, idx) => (
             <Link key={idx} to={pg.href}>
               <motion.div 
@@ -73,9 +65,8 @@ const PlaygroundHubPage: React.FC = () => {
               </motion.div>
             </Link>
           ))}
-        </div>
       </div>
-    </div>
+    </PageShell>
   );
 };
 

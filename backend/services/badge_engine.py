@@ -306,6 +306,116 @@ SEED_BADGES: List[Dict[str, Any]] = [
         "category": "qforge",
         "rarity": "epic",
         "xp_bonus": 150
+    },
+
+    # --- Q-RATING CONTESTS ---
+    {
+        "badge_id": "qrating_first_round",
+        "title": "Rated",
+        "description": "Competed in your first Q-Rating weekly round.",
+        "icon": "FaMedal",
+        "category": "qrating",
+        "rarity": "common",
+        "xp_bonus": 50
+    },
+    {
+        "badge_id": "qrating_rounds_5",
+        "title": "Regular Contender",
+        "description": "Competed in 5 Q-Rating rounds.",
+        "icon": "FaFlagCheckered",
+        "category": "qrating",
+        "rarity": "rare",
+        "xp_bonus": 100
+    },
+    {
+        "badge_id": "qrating_rounds_25",
+        "title": "Seasoned Competitor",
+        "description": "Competed in 25 Q-Rating rounds.",
+        "icon": "FaShieldAlt",
+        "category": "qrating",
+        "rarity": "epic",
+        "xp_bonus": 300
+    },
+    {
+        "badge_id": "qrating_podium",
+        "title": "On the Podium",
+        "description": "Finished in the top 3 of a Q-Rating round.",
+        "icon": "FaTrophy",
+        "category": "qrating",
+        "rarity": "rare",
+        "xp_bonus": 150
+    },
+    {
+        "badge_id": "qrating_round_winner",
+        "title": "Round Winner",
+        "description": "Took first place in a Q-Rating weekly round.",
+        "icon": "FaCrown",
+        "category": "qrating",
+        "rarity": "legendary",
+        "xp_bonus": 400
+    },
+    {
+        "badge_id": "qrating_tier_entangler",
+        "title": "Entangler",
+        "description": "Reached 1400 Q-Rating.",
+        "icon": "FaLink",
+        "category": "qrating",
+        "rarity": "rare",
+        "xp_bonus": 150
+    },
+    {
+        "badge_id": "qrating_tier_expert",
+        "title": "Quantum Expert",
+        "description": "Reached 1600 Q-Rating.",
+        "icon": "FaStar",
+        "category": "qrating",
+        "rarity": "epic",
+        "xp_bonus": 250
+    },
+    {
+        "badge_id": "qrating_tier_master",
+        "title": "Quantum Master",
+        "description": "Reached 1900 Q-Rating.",
+        "icon": "FaGem",
+        "category": "qrating",
+        "rarity": "epic",
+        "xp_bonus": 400
+    },
+    {
+        "badge_id": "qrating_tier_grandmaster",
+        "title": "Quantum Grandmaster",
+        "description": "Reached 2200 Q-Rating - the top of the ladder.",
+        "icon": "FaCrown",
+        "category": "qrating",
+        "rarity": "legendary",
+        "xp_bonus": 800
+    },
+    {
+        "badge_id": "qrating_contest_streak_4",
+        "title": "Four in a Row",
+        "description": "Competed in 4 consecutive weekly rounds.",
+        "icon": "FaFire",
+        "category": "qrating",
+        "rarity": "rare",
+        "xp_bonus": 150
+    },
+    {
+        "badge_id": "qrating_contest_streak_12",
+        "title": "Never Misses a Sunday",
+        "description": "Competed in 12 consecutive weekly rounds.",
+        "icon": "FaCalendarCheck",
+        "category": "qrating",
+        "rarity": "legendary",
+        "xp_bonus": 500
+    },
+    {
+        "badge_id": "qrating_silicon_verified",
+        "title": "Silicon Verified",
+        "description": "Ran a Q-Rating hardware solution on a real quantum device.",
+        "icon": "FaMicrochip",
+        "category": "qrating",
+        "rarity": "epic",
+        "xp_bonus": 200
     }
 ]
 
@@ -381,6 +491,21 @@ class BadgeEngine:
         daily_streak_doc = await db.daily_puzzle_streaks.find_one({"firebase_uid": firebase_uid}) or {}
         daily_puzzle_streak = daily_streak_doc.get("current_streak", 0)
 
+        # Q-Rating contests. peak_rating is used for the tier badges on purpose:
+        # reaching a tier is an achievement, and a later bad round should not
+        # silently revoke a badge already unlocked.
+        qrating_profile = await db.qrating_profiles.find_one({"firebase_uid": firebase_uid}) or {}
+        qrating_rounds = qrating_profile.get("rounds_played", 0)
+        qrating_peak = qrating_profile.get("peak_rating", 0)
+        qrating_streak = (qrating_profile.get("contest_streak") or {}).get("current", 0)
+        qrating_best_rank = None
+        if qrating_rounds:
+            best = await db.qrating_standings.find_one({"firebase_uid": firebase_uid},
+                                                       sort=[("rank", 1)])
+            qrating_best_rank = (best or {}).get("rank")
+        qrating_hw_verified = await db.qrating_submissions.count_documents(
+            {"firebase_uid": firebase_uid, "hardware_verified": True})
+
         newly_unlocked = []
 
         # Check conditions against catalog
@@ -448,6 +573,30 @@ class BadgeEngine:
             elif b_id == "daily_puzzle_streak_30" and daily_puzzle_streak >= 30:
                 should_unlock = True
             elif b_id == "daily_puzzle_streak_50" and daily_puzzle_streak >= 50:
+                should_unlock = True
+            elif b_id == "qrating_first_round" and qrating_rounds >= 1:
+                should_unlock = True
+            elif b_id == "qrating_rounds_5" and qrating_rounds >= 5:
+                should_unlock = True
+            elif b_id == "qrating_rounds_25" and qrating_rounds >= 25:
+                should_unlock = True
+            elif b_id == "qrating_podium" and qrating_best_rank is not None and qrating_best_rank <= 3:
+                should_unlock = True
+            elif b_id == "qrating_round_winner" and qrating_best_rank == 1:
+                should_unlock = True
+            elif b_id == "qrating_tier_entangler" and qrating_peak >= 1400:
+                should_unlock = True
+            elif b_id == "qrating_tier_expert" and qrating_peak >= 1600:
+                should_unlock = True
+            elif b_id == "qrating_tier_master" and qrating_peak >= 1900:
+                should_unlock = True
+            elif b_id == "qrating_tier_grandmaster" and qrating_peak >= 2200:
+                should_unlock = True
+            elif b_id == "qrating_contest_streak_4" and qrating_streak >= 4:
+                should_unlock = True
+            elif b_id == "qrating_contest_streak_12" and qrating_streak >= 12:
+                should_unlock = True
+            elif b_id == "qrating_silicon_verified" and qrating_hw_verified >= 1:
                 should_unlock = True
 
             if should_unlock:

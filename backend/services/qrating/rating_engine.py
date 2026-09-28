@@ -244,11 +244,18 @@ def apply_round(
         else:
             delta = difficulty_delta(old, rounds_played, task_results_by_uid.get(uid, []))
             mode = "difficulty"
+        # Ratings and deltas are whole numbers, as on every competitive ladder.
+        # Two reasons: a displayed rating can never disagree with the tier it is
+        # labelled with (1199.7 shown as "1200 Novice" reads as a bug), and the
+        # public ledger then adds up exactly - old + delta == new, auditable by
+        # anyone reading the page.
+        whole_delta = int(round(delta))
+        new_rating = max(0, int(round(old)) + whole_delta)
         new_rounds = rounds_played + 1
         out[uid] = {
-            "old_rating": round(old, 2),
-            "new_rating": round(max(0.0, old + delta), 2),
-            "delta": round(delta, 2),
+            "old_rating": int(round(old)),
+            "new_rating": new_rating,
+            "delta": whole_delta,
             "rd": round(shrink_rd(new_rounds), 2),
             "rounds_played": new_rounds,
             "mode": mode,
@@ -265,8 +272,9 @@ def pillar_rating(
     too few tasks per round for peer ranks to say anything."""
     base = DEFAULT_RATING if current is None else float(current)
     if not task_results:
-        return round(base, 2)
-    return round(max(0.0, base + difficulty_delta(base, rounds_played, task_results)), 2)
+        return int(round(base))
+    delta = int(round(difficulty_delta(base, rounds_played, task_results)))
+    return max(0, int(round(base)) + delta)
 
 
 def calibrate_difficulty(

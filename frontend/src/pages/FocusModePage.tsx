@@ -1,6 +1,9 @@
+import { useEffect, useRef } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Pause, SkipForward, RotateCcw, AlertTriangle } from 'lucide-react';
+import { Play, Pause, SkipForward, RotateCcw, AlertTriangle, Target } from 'lucide-react';
 import { usePomodoro } from '../features/focus/hooks/usePomodoro';
+import { updateTopicProgress } from '../features/roadmap/api';
 import { CircularProgress, formatTime } from '../features/focus/components/PomodoroFAB';
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
@@ -37,6 +40,25 @@ export default function FocusModePage() {
   const isDark = theme === 'dark';
   const meta = PHASE_META[state.phase];
 
+  // Qplanner sends learners here with ?topic=<slug>, so a focus session counts
+  // toward that topic's progress instead of evaporating.
+  const [searchParams] = useSearchParams();
+  const topicSlug = searchParams.get('topic');
+  const sessionsAtMount = useRef(state.totalCompleted);
+  const reported = useRef(0);
+
+  useEffect(() => {
+    if (!topicSlug) return;
+    const finishedHere = state.totalCompleted - sessionsAtMount.current;
+    if (finishedHere <= reported.current) return;
+    reported.current = finishedHere;
+
+    // The backend $incs time and takes max(previous, sent) for the percentage, so
+    // a rough 25%-per-pomodoro estimate can only ever move progress forward.
+    updateTopicProgress(topicSlug, PHASE_DURATIONS.work, Math.min(100, finishedHere * 25))
+      .catch(() => { /* a lost progress ping must not interrupt the timer */ });
+  }, [state.totalCompleted, topicSlug]);
+
   const pct = Math.round(((PHASE_DURATIONS[state.phase] - state.secondsLeft) / PHASE_DURATIONS[state.phase]) * 100);
 
   return (
@@ -56,6 +78,18 @@ export default function FocusModePage() {
       </div>
 
 
+
+      {topicSlug && (
+        <div className="relative z-10 mb-6 flex items-center gap-2 rounded-full border border-current/20 px-4 py-2 text-sm">
+          <Target className="h-4 w-4" aria-hidden />
+          <span>
+            Studying <strong>{topicSlug.replace(/-/g, ' ')}</strong>
+          </span>
+          <Link to="/qplanner" className="underline underline-offset-2">
+            back to plan
+          </Link>
+        </div>
+      )}
 
       {/* Phase label */}
       <motion.p

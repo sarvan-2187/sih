@@ -25,9 +25,51 @@ do not introduce shadcn `Card` wrappers into an explorer-style page.
 
 ## 1. Explorer-style pages (the primary system)
 
+### 1.0 Use the shared primitives
+
+`frontend/src/components/explorer/` implements everything in this section as components.
+**Use them instead of copy-pasting the patterns below** — the copies had already drifted apart
+across a dozen pages, which is what these exist to stop:
+
+| Primitive | Replaces | Section |
+|---|---|---|
+| `PageShell` | the outer page shell div | §1.1 |
+| `PageHero` | hero title + subtitle + action + eyebrow | §1.2 |
+| `tone.*` | hand-rolled `theme === 'dark' ? ... : ...` colour branches | §1.3 |
+| `ExplorerCard` | the grid-able card pattern | §1.4 |
+| `ExplorerPanel` | a non-navigable bordered panel (stat block, aside) | §1.4 |
+| `IconBadge` | the small square icon badge | §1.5 |
+| `CardSkeletonGrid`, `EmptyState`, `ErrorBanner` | loading / empty / error states | §1.7 |
+| `AccentButton` | emerald primary + outline buttons | §1.8 |
+
+```tsx
+import { PageShell, PageHero, AccentButton } from '@/components/explorer';
+
+<PageShell>                        {/* width: 'wide' | 'narrow' | 'reading' */}
+  <PageHero title="qStudio" subtitle="…" action={<AccentButton>New</AccentButton>} />
+  {/* content */}
+</PageShell>
+```
+
+The raw patterns in §1.1–§1.8 remain the specification these components implement — read them to
+understand the intent, and when you need something the components do not cover.
+
+### 1.0.1 Surfaces that are exempt
+
+The page shell assumes a **document** — something you read and scroll. Immersive tool surfaces do
+NOT use it, and forcing a padded max-width container around them makes them worse:
+
+- Canvas/workbench tools: Gates Playground, Algorithm Constellation, QForge Builder, QRoute,
+  Quantum Puzzles, qBook editor, qStudio study space
+- Players and viewers: Course Viewer, Video Player, Document Viewer, Live Session Room, Focus Mode
+
+These still follow §1.3 (colour tokens) and §3 (font, `data-theme`) — they just own their own
+layout. Pre-login pages (Login, Signup, onboarding, NotFound) and the marketing Landing page are
+likewise outside this system.
+
 ### 1.1 Page shell
 
-Every top-level explorer page uses this exact shell — copy it verbatim:
+`PageShell` implements this. Every top-level explorer page uses this exact shell:
 
 ```tsx
 const { theme } = useTheme();

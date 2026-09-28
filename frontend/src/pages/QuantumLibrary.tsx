@@ -1,6 +1,7 @@
 import React from 'react';
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
+import { PageHero, PageShell } from '@/components/explorer';
 import { ArrowLeft, BookOpen, ExternalLink, Zap } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { MermaidDiagram } from '@/components/MermaidDiagram';
@@ -98,27 +99,19 @@ export default function QuantumLibrary() {
   const navigate = useNavigate();
 
   return (
-    <div className={cn(
-      "min-h-screen py-12 px-6 md:px-16 w-full font-sans transition-colors duration-300 overflow-y-auto h-screen",
-      theme === 'dark' ? "bg-zinc-950 text-white" : "bg-zinc-100 text-zinc-900"
-    )}>
-      <div className="max-w-[1400px] mx-auto pb-24">
-        
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-10">
-          <button 
-            onClick={() => navigate(-1)} 
-            className="p-2 rounded-xl hover:bg-emerald-500/20 text-emerald-500 transition-colors"
+    <PageShell>
+      <PageHero
+        eyebrow={
+          <button
+            onClick={() => navigate(-1)}
+            className="flex w-fit items-center gap-2 text-sm text-emerald-500 transition-colors hover:text-emerald-600"
           >
-            <ArrowLeft className="w-5 h-5" />
+            <ArrowLeft className="w-4 h-4" /> Back
           </button>
-          <div>
-            <h1 className="text-3xl md:text-4xl font-semibold tracking-tight">Quantum Gate Library</h1>
-            <p className={cn("text-sm mt-1", theme === 'dark' ? "text-zinc-400" : "text-zinc-500")}>
-              A comprehensive reference for quantum logic gates, unitary matrices, and transformations.
-            </p>
-          </div>
-        </div>
+        }
+        title="Quantum Gate Library"
+        subtitle="A comprehensive reference for quantum logic gates, unitary matrices, and transformations."
+      />
 
         <div className="grid grid-cols-1 xl:grid-cols-4 gap-8">
           
@@ -467,7 +460,6 @@ export default function QuantumLibrary() {
           </div>
 
         </div>
-      </div>
-    </div>
+    </PageShell>
   );
 }

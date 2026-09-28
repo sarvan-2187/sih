@@ -11,8 +11,14 @@ import type { XpSummary, Badge, StreakStatus } from '@/features/gamification/typ
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
-import { FaUser, FaEnvelope, FaGraduationCap, FaCompass } from 'react-icons/fa';
+import { FaUser, FaEnvelope, FaGraduationCap, FaCompass, FaChartLine } from 'react-icons/fa';
 import { isStaff } from '@/lib/roles';
+import { useSearchParams } from 'react-router-dom';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AnalyticsDashboard } from '@/features/analytics/components/AnalyticsDashboard';
+
+const OVERVIEW_TAB = 'overview';
+const PROGRESS_TAB = 'progress';
 
 export default function ProfilePage() {
   const { currentUser } = useAuth();
@@ -74,6 +80,20 @@ export default function ProfilePage() {
 
   const isEducator = isStaff(userData?.role);
 
+  // Tab lives in the URL so /profile?tab=progress stays linkable and the browser
+  // back button moves between tabs. Staff have no analytics dashboard, so they
+  // never leave Overview.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get('tab');
+  const activeTab = !isEducator && requestedTab === PROGRESS_TAB ? PROGRESS_TAB : OVERVIEW_TAB;
+
+  const selectTab = (tab: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (tab === OVERVIEW_TAB) next.delete('tab');
+    else next.set('tab', tab);
+    setSearchParams(next, { replace: true });
+  };
+
   return (
     <div className={cn(
       "w-full h-full transition-colors duration-300 py-12 px-6 md:px-12",
@@ -120,6 +140,32 @@ export default function ProfilePage() {
             </motion.p>
           </div>
         </div>
+
+        {/* Learners get Overview | Progress; staff have no analytics, so no tab strip. */}
+        {!isEducator && (
+          <Tabs value={activeTab} onValueChange={selectTab} className="w-full">
+            <TabsList>
+              <TabsTrigger value={OVERVIEW_TAB}>
+                <FaUser className="mr-2 text-xs" aria-hidden />
+                Overview
+              </TabsTrigger>
+              <TabsTrigger value={PROGRESS_TAB}>
+                <FaChartLine className="mr-2 text-xs" aria-hidden />
+                Progress
+              </TabsTrigger>
+            </TabsList>
+
+            {/* Radix unmounts the inactive tab, so the analytics request only fires
+                once the learner actually opens Progress. */}
+            <TabsContent value={PROGRESS_TAB} className="mt-8">
+              <AnalyticsDashboard />
+            </TabsContent>
+          </Tabs>
+        )}
+
+        {/* Overview content: hidden rather than unmounted, so switching tabs does not
+            refetch gamification or lose the badge-unlock modal. */}
+        <div className={cn("flex flex-col gap-12", activeTab !== OVERVIEW_TAB && "hidden")}>
 
         {/* Level XP Bar (Learners Only) */}
         {!isEducator && <XPBar xpSummary={xpSummary} loading={loading} />}
@@ -204,6 +250,8 @@ export default function ProfilePage() {
 
         {/* Achievement Badges Catalog Grid (Learners Only) */}
         {!isEducator && <BadgeGrid badges={badges} loading={loading} />}
+
+        </div>
 
         {/* Celebration Modal for newly unlocked badge */}
         {!isEducator && unlockedModalBadge && (

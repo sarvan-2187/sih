@@ -35,6 +35,7 @@ class AITask(str, Enum):
     AUDIO_SCRIPT = "audio_script"
     SLIDES = "slides"
     MANIM = "manim"
+    PLANNER = "planner"
 
 
 class ChatMessage(BaseModel):

@@ -253,11 +253,13 @@ from routers.quantum_execution_router import router as quantum_execution_router
 from routers.qforge_router import router as qforge_router
 from routers.reviews import router as reviews_router
 from routers.quantum_optimizer import router as quantum_optimizer_router
+from routers.qplanner_router import router as qplanner_router
 from routers.verification import router as verification_router
 from routers.admin import router as admin_router
 from routers.mentorship import router as mentorship_router
 from routers.educator_analytics import router as educator_analytics_router
 from routers.classrooms import router as classrooms_router
+from routers.qrating import router as qrating_router
 
 app.include_router(accounts_router)
 app.include_router(verification_router)
@@ -284,6 +286,7 @@ app.include_router(xp_router)
 app.include_router(badges_router)
 app.include_router(streak_router)
 app.include_router(puzzles_router)
+app.include_router(qrating_router)
 app.include_router(qbook_router)
 app.include_router(qbook_datasets_router)
 app.include_router(qbraid_router)
@@ -296,3 +299,4 @@ app.include_router(bloch_router)
 app.include_router(quantum_execution_router)
 app.include_router(qforge_router)
 app.include_router(quantum_optimizer_router)
+app.include_router(qplanner_router)

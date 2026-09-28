@@ -20,7 +20,7 @@ PRESETS: List[Dict[str, Any]] = [
         "tagline": "The maths and physics everything else stands on.",
         "target_domains": ["quantum-maths", "quantum-physics"],
         "default_weeks": 4,
-        "default_weekly_minutes": 240,   # 4 h/week over 4 weeks == 16h, matches the 16h of content
+        "default_weekly_minutes": 300,   # 5 h/week -> packs into 4 sprints of the 15.9h of content
     },
     {
         "slug": "algorithms-sprint",
@@ -35,8 +35,8 @@ PRESETS: List[Dict[str, Any]] = [
         "label": "Complete Quantum Roadmap",
         "tagline": "All 93 topics, maths through quantum machine learning.",
         "target_domains": None,
-        "default_weeks": 20,
-        "default_weekly_minutes": 360,   # 6 h/week over 20 weeks == 120h vs 111h of content
+        "default_weeks": 22,
+        "default_weekly_minutes": 360,   # 6 h/week -> packs into 22 sprints of the 111.1h of content
     },
 ]
 

@@ -10,6 +10,7 @@ import { FaAtom, FaArrowLeft, FaArrowRight, FaCheckCircle, FaExclamationTriangle
 import { toast } from 'sonner';
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
+import { AccentButton, EmptyState, PageShell } from '@/components/explorer';
 import { motion } from 'framer-motion';
 
 export const QuizPage: React.FC = () => {
@@ -135,30 +136,29 @@ export const QuizPage: React.FC = () => {
 
   if (isLoading) {
     return (
-      <div className={cn("min-h-screen flex flex-col items-center justify-center p-6 font-sans", isDark ? "bg-zinc-950 text-white" : "bg-white text-zinc-900")}>
-        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mb-4" />
-        <p className="text-zinc-400 text-sm font-mono animate-pulse">Initializing Quantum Quiz Session...</p>
-      </div>
+      <PageShell width="reading">
+        <div className="flex flex-col items-center justify-center py-24 gap-4">
+          <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          <p className={cn("text-sm", isDark ? "text-zinc-400" : "text-zinc-600")}>
+            Initializing your quiz session...
+          </p>
+        </div>
+      </PageShell>
     );
   }
 
   if (isError || questions.length === 0) {
     return (
-      <div className={cn("min-h-screen flex flex-col items-center justify-center p-6 font-sans", isDark ? "bg-zinc-950 text-white" : "bg-white text-zinc-900")}>
-        <div className={cn("border rounded-[2rem] p-8 max-w-md text-center shadow-2xl font-sans", isDark ? "bg-black border-white/10" : "bg-zinc-50 border-zinc-200")}>
-          <FaExclamationTriangle className="mx-auto text-amber-500 text-3xl mb-4" />
-          <h2 className="text-xl font-sans font-normal leading-snug mb-2">Quiz Not Available</h2>
-          <p className="text-xs font-mono text-zinc-400 mb-6">
-            {(error as any)?.response?.data?.detail || 'No questions found for this topic.'}
-          </p>
-          <button
-            onClick={() => navigate('/roadmap')}
-            className="px-6 py-2.5 bg-emerald-500 hover:bg-emerald-600 rounded-xl text-xs font-medium text-white transition-colors shadow"
-          >
-            Return to Roadmap
-          </button>
-        </div>
-      </div>
+      <PageShell width="reading">
+        <EmptyState
+          icon={<FaExclamationTriangle className="w-6 h-6 text-amber-500" />}
+          title="Quiz not available"
+          hint={(error as any)?.response?.data?.detail || 'No questions found for this topic.'}
+          action={
+            <AccentButton onClick={() => navigate('/roadmap')}>Return to Roadmap</AccentButton>
+          }
+        />
+      </PageShell>
     );
   }
 
@@ -166,14 +166,11 @@ export const QuizPage: React.FC = () => {
   const answeredCount = Object.keys(answersMap).length;
 
   return (
-    <div className={cn(
-      "w-full min-h-screen transition-colors duration-300 py-8 px-4 sm:px-8 font-sans selection:bg-emerald-500 selection:text-white",
-      isDark ? "bg-zinc-950 text-white" : "bg-white text-zinc-900"
-    )}>
+    <PageShell width="reading" gap="tight" className="selection:bg-emerald-500 selection:text-white">
       {/* Background Ambient Glow */}
       <div className="fixed top-0 left-1/3 w-[500px] h-[500px] bg-emerald-500/10 rounded-full blur-[140px] pointer-events-none" />
 
-      <div className="max-w-4xl mx-auto relative z-10 space-y-6">
+      <div className="relative z-10 flex flex-col gap-6">
         {/* Header Bar */}
         <div className={cn(
           "flex items-center justify-between gap-4 p-4 sm:p-6 rounded-[2rem] border backdrop-blur-md shadow-lg",
@@ -324,6 +321,6 @@ export const QuizPage: React.FC = () => {
           )}
         </div>
       </div>
-    </div>
+    </PageShell>
   );
 };

@@ -175,6 +175,7 @@ TASK_MODEL_OVERRIDE: dict[tuple[AITask, str], str] = {
     (AITask.VIDEO_SCRIPT, "groq"): "openai/gpt-oss-120b",
     (AITask.AUDIO_SCRIPT, "groq"): "openai/gpt-oss-120b",
     (AITask.SLIDES, "groq"): "openai/gpt-oss-120b",
+    (AITask.PLANNER, "groq"): "openai/gpt-oss-120b",
 }
 
 # --------------------------------------------------------------------------

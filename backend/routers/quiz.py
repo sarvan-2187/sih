@@ -1,16 +1,11 @@
 import random
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from typing import Dict, Any, List, Optional
-from datetime import datetime
 from bson import ObjectId
 
 from database import get_db
 from auth import get_verified_firebase_user
-from services.quiz_grading_service import quiz_grading_service
-from services.xp_engine import xp_engine
-from services.streak_engine import streak_engine
-from services.badge_engine import badge_engine
-from routers.analytics import invalidate_analytics_cache
+from services.quiz_attempt_service import grade_and_record_attempt
 
 router = APIRouter(prefix="/api/v1/learning/quiz", tags=["Quiz Engine"])
 
@@ -114,96 +109,21 @@ async def submit_quiz_attempt(
     if not answers_input:
         raise HTTPException(status_code=400, detail="No answers provided in payload")
         
-    # Fetch questions by ID
-    q_ids = []
-    for a in answers_input:
-        qid_str = a.get("question_id")
-        if qid_str and ObjectId.is_valid(qid_str):
-            q_ids.append(ObjectId(qid_str))
-            
-    questions_cursor = db.quiz_questions.find({"_id": {"$in": q_ids}})
-    questions_list = await questions_cursor.to_list(length=len(q_ids))
-    questions_by_id = {str(q["_id"]): q for q in questions_list}
-    
-    graded_answers = []
-    total_score = 0
-    max_score = 0
-    total_xp_earned = 0
-    
-    for ans in answers_input:
-        qid_str = ans.get("question_id")
-        selected_val = ans.get("selected")
-        time_taken = ans.get("time_taken_s", 0)
-        
-        q_doc = questions_by_id.get(qid_str)
-        if not q_doc:
-            continue
-            
-        is_correct, xp_earned, explanation = quiz_grading_service.grade_question(q_doc, selected_val)
-        
-        q_score = 10 if is_correct else 0
-        total_score += q_score
-        max_score += 10
-        total_xp_earned += int(xp_earned)
-        
-        graded_answers.append({
-            "question_id": ObjectId(qid_str) if ObjectId.is_valid(qid_str) else qid_str,
-            "selected": selected_val,
-            "correct": is_correct,
-            "xp_earned": int(xp_earned),
-            "explanation": explanation,
-            "time_taken_s": time_taken
-        })
-        
-    now = datetime.utcnow()
-    score_pct = round((total_score / max_score) * 100) if max_score > 0 else 0
-    
-    attempt_doc = {
-        "firebase_uid": firebase_uid,
-        "topic_slug": topic_slug,
-        "question_ids": q_ids,
-        "answers": graded_answers,
-        "score": total_score,
-        "max_score": max_score,
-        "score_pct": score_pct,
-        "xp_earned": total_xp_earned,
-        "started_at": payload.get("started_at", now),
-        "submitted_at": now,
-        "mode": mode
-    }
-    
-    insert_result = await db.quiz_attempts.insert_one(attempt_doc)
-    attempt_id = str(insert_result.inserted_id)
-    
-    # Award XP via single-writer engine
-    xp_res = await xp_engine.award_xp(
+    # Grading, persistence, XP, streak, badges and cache invalidation all live in
+    # services/quiz_attempt_service.py so Qplanner's sprint quiz runs the identical
+    # path instead of a second copy that could drift or double-award XP.
+    result = await grade_and_record_attempt(
         db=db,
         firebase_uid=firebase_uid,
-        source="quiz",
-        amount=total_xp_earned,
-        source_ref_id=attempt_id,
-        idempotent_key=f"quiz_attempt_{attempt_id}"
+        topic_slug=topic_slug,
+        answers_input=answers_input,
+        mode=mode,
+        started_at=payload.get("started_at"),
     )
+    new_badges = result.pop("new_badges")
 
-    # Record streak & check badges
-    await streak_engine.record_daily_activity(db, firebase_uid)
-    new_badges = await badge_engine.check_and_award_badges(db, firebase_uid)
-
-    # Invalidate cached analytics response for this user
-    invalidate_analytics_cache(firebase_uid)
-    
     return {
-        "data": {
-            "attempt_id": attempt_id,
-            "topic_slug": topic_slug,
-            "score": total_score,
-            "max_score": max_score,
-            "score_pct": score_pct,
-            "xp_earned": total_xp_earned,
-            "user_xp_total": xp_res["xp_total"],
-            "user_level": xp_res["level"],
-            "submitted_at": now.isoformat()
-        },
+        "data": result,
         "meta": {"new_badges": new_badges},
         "error": None
     }

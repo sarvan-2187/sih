@@ -41,6 +41,11 @@ import GatesPlaygroundPage from './modules/gates-playground/pages/GatesPlaygroun
 import QRoutePage from './modules/qroute/pages/QRoutePage';
 import QRouteJobDetailPage from './modules/qroute/pages/QRouteJobDetailPage';
 import PuzzlesLandingPage from './modules/quantum-puzzles/pages/PuzzlesLandingPage';
+import QRatingHubPage from './modules/qrating/pages/QRatingHubPage';
+import RoundArenaPage from './modules/qrating/pages/RoundArenaPage';
+import StandingsPage from './modules/qrating/pages/StandingsPage';
+import PracticePage from './modules/qrating/pages/PracticePage';
+import PublicQRatingPage from './modules/qrating/pages/PublicQRatingPage';
 import PuzzlePage from './modules/quantum-puzzles/pages/PuzzlePage';
 import QForgeLandingPage from './modules/qforge/pages/QForgeLandingPage';
 import QForgeBuilderPage from './modules/qforge/pages/QForgeBuilderPage';
@@ -54,11 +59,11 @@ import { TooltipProvider } from '@/components/ui/tooltip';
 import { Toaster } from 'sonner';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { RoadmapPage } from './features/roadmap/pages/RoadmapPage';
+import QplannerPage from './features/qplanner/pages/QplannerPage';
 import { QuizPage } from './features/quiz/pages/QuizPage';
 import { QuizReviewPage } from './features/quiz/pages/QuizReviewPage';
 import { SpacedRepetitionPage } from './features/spaced-repetition/pages/SpacedRepetitionPage';
 import { NotesPage } from './features/notes/pages/NotesPage';
-import { AnalyticsPage } from './features/analytics/pages/AnalyticsPage';
 import { AssessmentPage } from './features/analytics/pages/AssessmentPage';
 import VideoOverviewChatPage from './pages/VideoOverviewChatPage';
 import QBookLibraryPage from './modules/qbook/pages/QBookLibraryPage';
@@ -171,6 +176,7 @@ function App() {
               <Route path="/" element={<Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/admin-demo" element={<AdminMockup />} />
+              <Route path="/q-rating/:handle" element={<PublicQRatingPage />} />
               <Route path="/admin" element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminPage />
@@ -207,11 +213,34 @@ function App() {
                     <RoadmapPage />
                   </ProtectedRoute>
                 } />
-                <Route path="/analytics" element={
+                <Route path="/qrating" element={
                   <ProtectedRoute>
-                    <AnalyticsPage />
+                    <QRatingHubPage />
                   </ProtectedRoute>
                 } />
+                <Route path="/qrating/practice" element={
+                  <ProtectedRoute>
+                    <PracticePage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/qrating/rounds/:roundId" element={
+                  <ProtectedRoute>
+                    <RoundArenaPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/qrating/rounds/:roundId/standings" element={
+                  <ProtectedRoute>
+                    <StandingsPage />
+                  </ProtectedRoute>
+                } />
+                <Route path="/qplanner" element={
+                  <ProtectedRoute allowedRoles={['learner']}>
+                    <QplannerPage />
+                  </ProtectedRoute>
+                } />
+                {/* Analytics now lives in the Profile page's Progress tab. Kept as a
+                    redirect so old links and bookmarks still land somewhere useful. */}
+                <Route path="/analytics" element={<Navigate to="/profile?tab=progress" replace />} />
                 <Route path="/analytics/assessment/:type" element={
                   <ProtectedRoute>
                     <AssessmentPage />

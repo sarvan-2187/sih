@@ -48,7 +48,11 @@ async def create_all_indexes(db: AsyncIOMotorDatabase):
     # 12. assessments
     await db.assessments.create_index([("firebase_uid", 1), ("taken_at", -1)])
 
-    # 13. qstudio_rag_chunks / qstudio_rag_messages — see PLANS/qstudio-rag.md
+    # 13. qplanner_plans — one active plan per learner, the rest archived.
+    # See PLANS/qplanner.md.
+    await db.qplanner_plans.create_index([("firebase_uid", 1), ("status", 1)])
+
+    # 14. qstudio_rag_chunks / qstudio_rag_messages — see PLANS/qstudio-rag.md
     await db.qstudio_rag_chunks.create_index([("study_space_id", 1), ("source_id", 1)])
     await db.qstudio_rag_chunks.create_index("chunk_id", unique=True)
     await db.qstudio_rag_messages.create_index([("study_space_id", 1), ("created_at", 1)])

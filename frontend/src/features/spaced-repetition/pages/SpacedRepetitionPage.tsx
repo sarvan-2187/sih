@@ -4,6 +4,7 @@ import { FaBrain, FaCheck, FaTimes, FaMapSigns, FaCodeBranch, FaPlay } from 'rea
 import { useNavigate } from 'react-router-dom';
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
+import { IconBadge, PageHero, PageShell, tone } from '@/components/explorer';
 import { apiClient as api } from '@/lib/apiClient';
 import { toast } from 'sonner';
 
@@ -59,26 +60,24 @@ export const SpacedRepetitionPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className={cn("w-full h-full flex items-center justify-center font-mono text-sm", theme === 'dark' ? "text-zinc-500" : "text-zinc-400")}>
-        Loading spaced repetition data...
-      </div>
+      <PageShell width="reading">
+        <div className={cn("h-12 w-64 rounded animate-pulse", tone.skeleton(theme))} />
+        <div className={cn("h-48 w-full rounded-[2rem] animate-pulse", tone.skeleton(theme))} />
+      </PageShell>
     );
   }
 
   return (
-    <div className={cn("w-full h-full overflow-y-auto p-8", theme === 'dark' ? "text-white" : "text-zinc-900")}>
-      <div className="max-w-4xl mx-auto space-y-8">
-        <div className="flex items-center gap-4">
-          <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 border border-emerald-500/30 flex items-center justify-center text-emerald-500 text-2xl">
-            <FaBrain />
-          </div>
-          <div>
-            <h1 className="text-3xl font-sans tracking-tight">Daily Reviews</h1>
-            <p className={cn("text-sm font-mono mt-1", theme === 'dark' ? "text-zinc-400" : "text-zinc-500")}>
-              Master concepts permanently using the SM-2 spaced repetition algorithm.
-            </p>
-          </div>
-        </div>
+    <PageShell width="reading">
+      <PageHero
+        eyebrow={
+          <IconBadge>
+            <FaBrain className="w-6 h-6" />
+          </IconBadge>
+        }
+        title="Daily Reviews"
+        subtitle="Master concepts permanently using the SM-2 spaced repetition algorithm."
+      />
 
         {dueItems.length === 0 ? (
           <div className={cn("text-center p-12 rounded-[2rem] border", theme === 'dark' ? "bg-zinc-950 border-white/10" : "bg-white border-zinc-200")}>
@@ -141,7 +140,6 @@ export const SpacedRepetitionPage: React.FC = () => {
             ))}
           </div>
         )}
-      </div>
-    </div>
+    </PageShell>
   );
 };

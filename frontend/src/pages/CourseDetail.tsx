@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
+import { FaBookOpen } from 'react-icons/fa';
+import { EmptyState, PageHero, PageShell } from '@/components/explorer';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -97,7 +99,7 @@ export default function CourseDetail() {
   }
 
   if (loading) return (
-    <div className="p-4 md:p-8 max-w-4xl mx-auto space-y-6 animate-in fade-in duration-500">
+    <PageShell width="reading" gap="tight">
       <Skeleton className="h-10 w-2/3" />
       <div className="space-y-2">
         <Skeleton className="h-4 w-full" />
@@ -117,14 +119,18 @@ export default function CourseDetail() {
           </Card>
         ))}
       </div>
-    </div>
+    </PageShell>
   );
-  if (!course) return <div className="p-4 md:p-8 max-w-4xl mx-auto text-destructive">Course not found.</div>;
+  if (!course)
+    return (
+      <PageShell width="reading">
+        <EmptyState icon={<FaBookOpen className="w-6 h-6" />} title="Course not found" />
+      </PageShell>
+    );
 
   return (
-    <div className="p-4 md:p-8 max-w-4xl mx-auto">
-      <h1 className="text-3xl font-bold mb-2">{course.title}</h1>
-      <p className="mb-6 text-lg text-muted-foreground">{course.description}</p>
+    <PageShell width="reading" gap="tight">
+      <PageHero title={course.title} subtitle={course.description} />
       
       {!course.enrolled && currentUser?.uid !== course.owner_uid ? (
         <Button onClick={enroll} disabled={enrolling} className="mb-8 font-medium">
@@ -210,6 +216,6 @@ export default function CourseDetail() {
           )}
         </div>
       )}
-    </div>
+    </PageShell>
   );
 }

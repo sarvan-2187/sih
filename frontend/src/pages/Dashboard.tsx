@@ -8,6 +8,8 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 
 import { Leaderboard } from '../modules/quantum-puzzles/components/Leaderboard';
+import { QplannerTodayCard } from '../features/qplanner/components/QplannerTodayCard';
+import { QRatingDashboardCard } from '../modules/qrating/components/QRatingDashboardCard';
 import { isStaff } from '@/lib/roles';
 
 export default function Dashboard() {
@@ -91,7 +93,11 @@ export default function Dashboard() {
             <QuantumNewsRadar variant={isStaff(userData?.role) ? "educator" : "student"} />
           </div>
           {!isStaff(userData?.role) && (
-            <div>
+            <div className="flex flex-col gap-8">
+              {/* Today's Qplanner session, or a prompt to build a plan */}
+              <QplannerTodayCard />
+              {/* Q-Rating: current rating plus the countdown to the next round */}
+              <QRatingDashboardCard />
               {/* Leaderboard Column */}
               <Leaderboard />
             </div>

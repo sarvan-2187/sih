@@ -10,6 +10,7 @@ import { listPublishedCourses, listEnrolledCourses, getCourseProgress, listEduca
 import { CertificateGenerator } from '../components/CertificateGenerator';
 import type { Course } from '../api/courses';
 import { DEMO_COURSES } from '@/data/demoDomainCourses';
+import { PageHero, PageShell } from '@/components/explorer';
 import { isStaff } from '@/lib/roles';
 
 const DOMAIN_CATEGORIES = [
@@ -95,13 +96,11 @@ export default function CourseCatalog() {
   }, [courses, selectedCategory]);
 
   return (
-    <div className="p-6 md:p-8 animate-in fade-in duration-500 max-w-7xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Course Catalog</h1>
-          <p className="text-muted-foreground text-sm mt-1">Explore foundational quantum computing & domain-specific engineering applications.</p>
-        </div>
-      </div>
+    <PageShell gap="tight">
+      <PageHero
+        title="Course Catalog"
+        subtitle="Explore foundational quantum computing and domain-specific engineering applications."
+      />
       
       <Tabs defaultValue="all" className="w-full">
         <TabsList className={`mb-6 flex w-full max-w-3xl justify-start sm:grid overflow-x-auto h-auto sm:h-10 p-1 ${isStaff(userRole) ? 'sm:grid-cols-4' : 'sm:grid-cols-3'}`}>
@@ -121,8 +120,8 @@ export default function CourseCatalog() {
                 onClick={() => setSelectedCategory(cat.id)}
                 className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all cursor-pointer border whitespace-nowrap ${
                   selectedCategory === cat.id
-                    ? 'bg-emerald-600/20 text-emerald-300 border-emerald-500/50 shadow-sm shadow-emerald-500/20'
-                    : 'bg-muted/40 text-muted-foreground border-border/40 hover:bg-muted hover:text-foreground'
+                    ? 'bg-emerald-500/15 text-emerald-500 border-emerald-500/40'
+                    : 'border-transparent text-zinc-500 hover:border-emerald-500/30 hover:text-emerald-500'
                 }`}
               >
                 {cat.label}
@@ -304,7 +303,7 @@ export default function CourseCatalog() {
           </TabsContent>
         )}
       </Tabs>
-    </div>
+    </PageShell>
   );
 }
 

@@ -4,6 +4,7 @@ import { startAssessment, submitAssessment } from '../api';
 import type { AssessmentQuestion, AssessmentSubmitResponse } from '../types/analytics.types';
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
+import { PageShell } from '@/components/explorer';
 import { motion } from 'framer-motion';
 import { FaCheckCircle, FaTimes, FaArrowRight, FaAtom } from 'react-icons/fa';
 import { toast } from 'sonner';
@@ -72,27 +73,21 @@ export const AssessmentPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className={cn(
-        "w-full h-full min-h-screen transition-colors duration-300 py-12 px-6 md:px-12 flex items-center justify-center font-sans",
-        theme === 'dark' ? "bg-zinc-950 text-white" : "bg-white text-zinc-900"
-      )}>
-        <div className="text-center space-y-4">
-          <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin mx-auto" />
-          <p className={cn("text-xs font-mono animate-pulse", theme === 'dark' ? "text-zinc-400" : "text-zinc-600")}>
-            Generating {type.toUpperCase()} assessment question set...
+      <PageShell width="reading">
+        <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
+          <div className="w-12 h-12 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+          <p className={cn("text-sm", theme === 'dark' ? "text-zinc-400" : "text-zinc-600")}>
+            Generating your {type.toUpperCase()} assessment...
           </p>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   if (result) {
     return (
-      <div className={cn(
-        "w-full h-full transition-colors duration-300 py-12 px-6 md:px-12 font-sans",
-        theme === 'dark' ? "text-white" : "text-zinc-900"
-      )}>
-        <div className="max-w-3xl mx-auto space-y-8 text-center">
+      <PageShell width="reading">
+        <div className="flex flex-col gap-8 text-center">
           <motion.div
             className={cn(
               "p-8 sm:p-12 rounded-[2rem] border overflow-hidden shadow-md transition-all duration-300 font-sans space-y-6",
@@ -150,7 +145,7 @@ export const AssessmentPage: React.FC = () => {
 
             <div className="flex items-center justify-center gap-4 pt-4">
               <button
-                onClick={() => navigate('/analytics')}
+                onClick={() => navigate('/profile?tab=progress')}
                 className="px-6 py-2.5 bg-emerald-500 text-white rounded-lg shadow hover:bg-emerald-600 font-medium text-xs transition-colors flex items-center gap-2"
               >
                 View Analytics Dashboard <FaArrowRight className="text-xs" />
@@ -158,16 +153,13 @@ export const AssessmentPage: React.FC = () => {
             </div>
           </motion.div>
         </div>
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className={cn(
-      "w-full h-full transition-colors duration-300 py-12 px-6 md:px-12 font-sans",
-      theme === 'dark' ? "text-white" : "text-zinc-900"
-    )}>
-      <div className="max-w-4xl mx-auto space-y-8">
+    <PageShell width="reading">
+      <div className="flex flex-col gap-8">
         {/* Header bar */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -186,7 +178,7 @@ export const AssessmentPage: React.FC = () => {
           </div>
 
           <button
-            onClick={() => navigate('/analytics')}
+            onClick={() => navigate('/profile?tab=progress')}
             className={cn("p-2 rounded-full border transition-colors", theme === 'dark' ? "bg-black border-white/10 text-zinc-400 hover:text-white" : "bg-zinc-100 border-zinc-200 text-zinc-600 hover:text-zinc-900")}
           >
             <FaTimes className="text-sm" />
@@ -296,6 +288,6 @@ export const AssessmentPage: React.FC = () => {
           </motion.div>
         )}
       </div>
-    </div>
+    </PageShell>
   );
 };

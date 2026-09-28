@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom';
 import { auth } from '../firebase';
 import { useEffect, useState } from 'react';
-import { FaBookOpen, FaCog, FaSignOutAlt, FaUpload, FaHome, FaFolderOpen, FaFlask, FaProjectDiagram, FaStickyNote, FaGlobe, FaBolt, FaFire, FaBook, FaChartLine, FaPuzzlePiece, FaUser, FaSatelliteDish, FaLightbulb, FaShareAlt, FaStopwatch, FaBrain, FaShieldAlt, FaUserFriends, FaChartBar, FaSchool } from 'react-icons/fa';
+import { FaBookOpen, FaCog, FaSignOutAlt, FaUpload, FaHome, FaFolderOpen, FaFlask, FaProjectDiagram, FaStickyNote, FaGlobe, FaBolt, FaFire, FaBook, FaChartLine, FaPuzzlePiece, FaUser, FaSatelliteDish, FaLightbulb, FaShareAlt, FaStopwatch, FaBrain, FaShieldAlt, FaUserFriends, FaChartBar, FaSchool, FaBullseye, FaMedal } from 'react-icons/fa';
 import { isStaff } from '@/lib/roles';
 import { Separator } from '@/components/ui/separator';
 import { fetchXpSummary, fetchStreakStatus } from '@/features/gamification/api';
@@ -133,14 +133,16 @@ export default function AppLayout() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname.startsWith('/analytics')} tooltip="Analytics & Progress">
-                  <Link to="/analytics">
-                    <FaChartLine />
-                    <span>Analytics & Progress</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
+              {!isEducator && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild isActive={location.pathname === '/qplanner'} tooltip="Qplanner">
+                    <Link to="/qplanner">
+                      <FaBullseye />
+                      <span>Qplanner</span>
+                    </Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              )}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={location.pathname === '/notes'} tooltip="Personal Notes">
                   <Link to="/notes">
@@ -164,6 +166,14 @@ export default function AppLayout() {
                   <Link to="/puzzles">
                     <FaPuzzlePiece />
                     <span>Gate Puzzles</span>
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton asChild isActive={location.pathname.startsWith('/qrating')} tooltip="Q-Rating">
+                  <Link to="/qrating">
+                    <FaMedal />
+                    <span>Q-Rating</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { PageHero, PageShell } from '@/components/explorer';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -56,14 +57,11 @@ export default function ResourceLibrary() {
   };
 
   return (
-    <div className="p-6 md:p-8 animate-in fade-in duration-500 max-w-7xl mx-auto space-y-8">
-        
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-4xl font-sans tracking-tight">Resource Library</h1>
-            <p className="text-muted-foreground mt-1">Access lectures, notes, and study materials.</p>
-          </div>
-        </div>
+    <PageShell>
+      <PageHero
+        title="Resource Library"
+        subtitle="Access lectures, notes, and study materials."
+      />
 
         <div className="flex flex-col md:flex-row gap-4 bg-muted/50 p-4 rounded-lg border border-border">
           <div className="relative flex-1">
@@ -136,6 +134,6 @@ export default function ResourceLibrary() {
             ))}
           </div>
         )}
-      </div>
+    </PageShell>
   );
 }
