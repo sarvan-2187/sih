@@ -220,7 +220,7 @@ export interface AnimationResult {
 export interface Output {
   id: string;
   // null for qCompare-triggered audio/animation outputs (routers/qroute_router.py) —
-  // every ordinary qStudio output still always has a real study space.
+  // every ordinary QStudio output still always has a real study space.
   study_space_id: string | null;
   owner_uid: string;
   type: OutputType;

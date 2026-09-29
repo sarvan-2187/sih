@@ -16,6 +16,9 @@ import { motion } from 'framer-motion';
 import { useSearchParams } from 'react-router-dom';
 import { DomainSelector } from '../components/DomainSelector';
 
+// The QAOA "Optimize My Path" banner above the domain tracks. Hidden for the demo.
+const SHOW_PATH_OPTIMIZER = false;
+
 interface RoadmapUnit {
   id: number;
   title: string;
@@ -637,7 +640,9 @@ export const RoadmapPage: React.FC = () => {
           </motion.div>
         </div>
 
-        {/* Quantum Learning Path Optimizer CTA (QAOA-recommended session) */}
+        {/* Quantum Learning Path Optimizer CTA (QAOA-recommended session). Hidden for the
+            demo; set SHOW_PATH_OPTIMIZER to true to bring it back. */}
+        {SHOW_PATH_OPTIMIZER && (
         <motion.button
           onClick={() => setShowRecommendModal(true)}
           initial={{ opacity: 0, y: -8 }}
@@ -665,6 +670,7 @@ export const RoadmapPage: React.FC = () => {
             Optimize My Path
           </span>
         </motion.button>
+        )}
 
         {/* Quantum Domain Tracks Selector Bar (With Prerequisite Locking) */}
         <DomainSelector

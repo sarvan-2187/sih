@@ -9,11 +9,11 @@ See PLANS/qplanner.md.
 """
 import random
 from datetime import date, datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from bson import ObjectId
 from fastapi import APIRouter, Depends, HTTPException, Query
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from auth import get_verified_firebase_user
 from database import get_db
@@ -41,13 +41,26 @@ DAYS_IN_WEEK = 7
 # Request models
 # ---------------------------------------------------------------------------
 
+# What the intake wizard's "your current level" answer does to a never-quizzed topic.
+LEVEL_EMPHASIS = {"zero": "deep", "basics": "normal", "revision": "light"}
+MAX_START_DELAY_DAYS = 90
+
+
 class PlanRequest(BaseModel):
     preset_slug: str
-    deadline: date
-    weekly_minutes: int = Field(ge=30, le=3000)
+    # None = finish whenever the schedule finishes (the wizard's flow); a date turns
+    # the feasibility check into a real constraint.
+    deadline: Optional[date] = None
+    start_date: Optional[date] = None      # None = today
+    name: Optional[str] = Field(default=None, max_length=60)
+    weekly_minutes: Optional[int] = Field(default=None, ge=30, le=3000)
     study_days: List[int] = Field(default_factory=lambda: [0, 2, 4])
+    # Hours per weekday (0 = Monday). When given it replaces weekly_minutes and
+    # study_days: the budget is the sum, the study days are the non-zero ones.
+    day_minutes: Optional[List[int]] = None
     # lets a learner narrow a preset without us inventing another one
     target_domains: Optional[List[str]] = None
+    domain_levels: Optional[Dict[str, Literal["zero", "basics", "revision"]]] = None
 
     @field_validator("study_days")
     @classmethod
@@ -56,6 +69,23 @@ class PlanRequest(BaseModel):
         if not days:
             raise ValueError("pick at least one study day (0 = Monday .. 6 = Sunday)")
         return days
+
+    @model_validator(mode="after")
+    def _resolve_budget(self) -> "PlanRequest":
+        if self.day_minutes is not None:
+            if len(self.day_minutes) != DAYS_IN_WEEK or any(not 0 <= m <= 720 for m in self.day_minutes):
+                raise ValueError("day_minutes needs 7 values between 0 and 720")
+            self.weekly_minutes = sum(self.day_minutes)
+            self.study_days = [d for d, m in enumerate(self.day_minutes) if m > 0]
+        if not self.weekly_minutes or self.weekly_minutes < 30:
+            raise ValueError("plan at least 30 minutes a week")
+        if self.start_date is not None:
+            offset = (self.start_date - date.today()).days
+            if not 0 <= offset <= MAX_START_DELAY_DAYS:
+                raise ValueError("start date must be within the next 90 days")
+        if self.name is not None:
+            self.name = self.name.strip() or None
+        return self
 
 
 class SprintQuizSubmission(BaseModel):
@@ -226,15 +256,33 @@ async def _load_context(db, uid: str, payload: PlanRequest) -> Dict[str, Any]:
     domains = payload.target_domains if payload.target_domains is not None else preset["target_domains"]
     targets = sched.topics_for_domains(topics_by_slug, domains)
     completed = await fetch_completed_slugs(db, uid)
+    closure = sched.prereq_closure(topics_by_slug, targets, completed)
+    levels = payload.domain_levels or {}
+    unquizzed = {
+        slug: LEVEL_EMPHASIS[levels[domain]]
+        for slug in closure
+        if (domain := topics_by_slug[slug].get("domain") or "quantum-computing") in levels
+    }
+    mastery = await fetch_mastery_map(db, uid)
     return {
         "preset": preset,
         "topics_by_slug": topics_by_slug,
         "domains": domains,
         "targets": targets,
         "completed": completed,
-        "mastery": await fetch_mastery_map(db, uid),
-        "closure": sched.prereq_closure(topics_by_slug, targets, completed),
+        "mastery": mastery,
+        "unquizzed": unquizzed,
+        "baseline": qplanner_ai.baseline_emphasis(sorted(closure), mastery, unquizzed),
+        "closure": closure,
+        "start": payload.start_date or date.today(),
     }
+
+
+def _schedule_end(start: date, schedule: Dict[str, Any]) -> date:
+    """The last day with work on it; the plan's natural finish when no deadline was set."""
+    if schedule["days"]:
+        return date.fromisoformat(schedule["days"][-1]["date"])
+    return start
 
 
 async def _generate_plan(
@@ -243,8 +291,7 @@ async def _generate_plan(
     payload: PlanRequest,
     replanned_from: Optional[ObjectId] = None,
 ) -> Dict[str, Any]:
-    today = date.today()
-    if payload.deadline <= today:
+    if payload.deadline is not None and payload.deadline <= date.today():
         raise HTTPException(status_code=400, detail="Deadline must be in the future")
 
     context = await _load_context(db, uid, payload)
@@ -257,45 +304,52 @@ async def _generate_plan(
 
     topics_by_slug = context["topics_by_slug"]
     planned_slugs = sorted(closure)
+    start = context["start"]
+    goal_label = payload.name or context["preset"]["label"]
 
     # Pass 1: deterministic emphasis, so there is a real skeleton to show the model.
-    baseline = qplanner_ai.baseline_emphasis(planned_slugs, context["mastery"])
+    baseline = context["baseline"]
     schedule = _build_schedule(
-        topics_by_slug, closure, baseline, payload.weekly_minutes, today, payload.study_days,
+        topics_by_slug, closure, baseline, payload.weekly_minutes, start, payload.study_days,
     )
 
     narrative = await qplanner_ai.generate_narrative(
-        goal_label=context["preset"]["label"],
+        goal_label=goal_label,
         sprints=schedule["sprints"],
         topics_by_slug=topics_by_slug,
         mastery_map=context["mastery"],
         planned_slugs=planned_slugs,
-        deadline=payload.deadline.isoformat(),
+        deadline=(payload.deadline or _schedule_end(start, schedule)).isoformat(),
         weekly_minutes=payload.weekly_minutes,
         identity=uid,
+        unquizzed=context["unquizzed"],
     )
 
     # Pass 2: only when the model actually moved an emphasis, since that changes minutes.
     if narrative["emphasis"] != baseline:
         schedule = _build_schedule(
             topics_by_slug, closure, narrative["emphasis"],
-            payload.weekly_minutes, today, payload.study_days,
+            payload.weekly_minutes, start, payload.study_days,
         )
 
-    sprints = _apply_sprint_copy(schedule["sprints"], narrative["sprints"], today)
+    sprints = _apply_sprint_copy(schedule["sprints"], narrative["sprints"], start)
+    deadline = payload.deadline or _schedule_end(start, schedule)
     now = datetime.utcnow()
 
     doc = {
         "firebase_uid": uid,
         "status": "active",
         "preset_slug": context["preset"]["slug"],
-        "goal_label": context["preset"]["label"],
+        "goal_label": goal_label,
         "target_domains": context["domains"],
         "target_slugs": planned_slugs,
-        "start_date": today.isoformat(),
-        "deadline": payload.deadline.isoformat(),
+        "start_date": start.isoformat(),
+        "deadline": deadline.isoformat(),
+        "deadline_set": payload.deadline is not None,
         "weekly_minutes": payload.weekly_minutes,
         "study_days": payload.study_days,
+        "day_minutes": payload.day_minutes,
+        "domain_levels": payload.domain_levels,
         "ai_generated": narrative["ai_generated"],
         "strategy_note": narrative["strategy_note"],
         "personalized_tips": narrative["personalized_tips"],
@@ -305,7 +359,7 @@ async def _generate_plan(
         "completed_tasks": {},
         "replanned_from": replanned_from,
         "feasibility": sched.feasibility(
-            sum(schedule["minutes"].values()), today, payload.deadline,
+            sum(schedule["minutes"].values()), start, deadline,
             payload.weekly_minutes, sprints_needed=len(sprints),
         ),
         "created_at": now,
@@ -345,23 +399,41 @@ async def preview_plan(
 
     context = await _load_context(db, uid, payload)
     closure = context["closure"]
-    today = date.today()
+    topics_by_slug = context["topics_by_slug"]
+    start = context["start"]
 
-    emphasis = qplanner_ai.baseline_emphasis(sorted(closure), context["mastery"])
     schedule = _build_schedule(
-        context["topics_by_slug"], closure, emphasis,
-        payload.weekly_minutes, today, payload.study_days,
+        topics_by_slug, closure, context["baseline"],
+        payload.weekly_minutes, start, payload.study_days,
     )
     total_minutes = sum(schedule["minutes"].values())
+    end = _schedule_end(start, schedule)
+    # roadmap order, so the review step lists topics the way they will be studied
+    ordered = [slug for sprint in schedule["sprints"] for slug in sprint["topic_slugs"]]
 
     return _envelope({
-        "goal_label": context["preset"]["label"],
+        "goal_label": payload.name or context["preset"]["label"],
         "topic_count": len(closure),
         "already_completed": len(context["targets"] & set(context["completed"])),
         "sprint_count": len(schedule["sprints"]),
         "total_minutes": total_minutes,
+        "start_date": start.isoformat(),
+        "end_date": end.isoformat(),
+        "topics": [
+            {
+                "slug": slug,
+                "title": topics_by_slug[slug].get("title", slug),
+                "domain": topics_by_slug[slug].get("domain") or "quantum-computing",
+                "minutes": schedule["minutes"][slug],
+            }
+            for slug in ordered
+        ],
+        "sprints": [
+            {"index": s["index"], "topic_slugs": s["topic_slugs"], "planned_minutes": s["planned_minutes"]}
+            for s in schedule["sprints"]
+        ],
         "feasibility": sched.feasibility(
-            total_minutes, today, payload.deadline, payload.weekly_minutes,
+            total_minutes, start, payload.deadline or end, payload.weekly_minutes,
             sprints_needed=len(schedule["sprints"]),
         ),
     })
@@ -447,8 +519,9 @@ async def start_sprint_quiz(
         raise HTTPException(status_code=404, detail="No sprint " + str(index) + " in the active plan")
 
     slugs = sprint["topic_slugs"]
+    # Multiple choice only: that is the one question type the sprint quiz dialog renders.
     questions = await db.quiz_questions.find(
-        {"$or": [{"topic_slug": {"$in": slugs}}, {"tags": {"$in": slugs}}]}
+        {"type": "mcq", "$or": [{"topic_slug": {"$in": slugs}}, {"tags": {"$in": slugs}}]}
     ).to_list(length=200)
     if not questions:
         raise HTTPException(
@@ -537,12 +610,17 @@ async def replan(
     previous = await _active_plan_or_404(db, uid)
 
     if payload is None:
+        # A plan built without a deadline re-derives its finish; one with a deadline keeps it.
+        keep_deadline = previous.get("deadline_set", True)
         payload = PlanRequest(
             preset_slug=previous["preset_slug"],
-            deadline=date.fromisoformat(previous["deadline"]),
+            deadline=date.fromisoformat(previous["deadline"]) if keep_deadline else None,
+            name=previous.get("goal_label"),
             weekly_minutes=previous["weekly_minutes"],
             study_days=previous["study_days"],
+            day_minutes=previous.get("day_minutes"),
             target_domains=previous.get("target_domains"),
+            domain_levels=previous.get("domain_levels"),
         )
 
     plan = await _generate_plan(db, uid, payload, replanned_from=previous["_id"])

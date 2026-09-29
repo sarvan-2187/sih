@@ -133,7 +133,7 @@ const QRouteJobDetailPage: React.FC = () => {
     return (
       <div className="theme-qp flex flex-col items-center justify-center h-[calc(100vh-3.5rem)] gap-3 text-muted-foreground">
         <p className="text-sm">Job not found, or you don't have access to it.</p>
-        <Link to="/qroute" className="text-sm text-primary hover:underline">
+        <Link to="/qroute" className="text-sm text-emerald-500 hover:underline">
           &larr; Back to QRoute
         </Link>
       </div>
@@ -154,7 +154,7 @@ const QRouteJobDetailPage: React.FC = () => {
 
       <div className="flex items-center justify-between mb-4">
         <div>
-          <h1 className="text-xl font-heading font-semibold">
+          <h1 className="text-xl font-sans font-semibold">
             {providerName} <span className="text-muted-foreground font-normal">· {device?.name ?? job.device_id}</span>
           </h1>
           <p className="text-xs text-muted-foreground font-mono">{job.id}</p>

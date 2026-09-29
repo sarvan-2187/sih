@@ -255,8 +255,8 @@ const QRoutePage: React.FC = () => {
     <DndContext onDragEnd={handleDragEnd}>
       <div className="theme-qp flex flex-col h-[calc(100vh-3.5rem)] overflow-auto bg-background text-foreground">
         <div className="px-6 pt-4 pb-2 shrink-0">
-          <h1 className="text-xl font-heading font-semibold flex items-center gap-2">
-            <FaAtom className="text-primary" /> QRoute
+          <h1 className="text-xl font-sans font-semibold flex items-center gap-2">
+            <FaAtom className="text-emerald-500" /> QRoute
           </h1>
           <p className="text-sm text-muted-foreground">
             Build a circuit once, submit it to real hardware across multiple quantum providers.
@@ -324,7 +324,7 @@ const QRoutePage: React.FC = () => {
             <Card size="sm" className="shrink-0">
               <CardHeader>
                 <CardTitle className="text-sm flex items-center gap-2">
-                  <FaSatelliteDish className="text-primary" /> Submit to real hardware
+                  <FaSatelliteDish className="text-emerald-500" /> Submit to real hardware
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -356,7 +356,7 @@ const QRoutePage: React.FC = () => {
                               className={cn(
                                 'w-full text-left px-2.5 py-1.5 rounded-lg border text-xs flex items-center justify-between transition-colors',
                                 selectedDeviceKey === key
-                                  ? 'border-primary bg-primary/10'
+                                  ? 'border-emerald-500 bg-emerald-500/10'
                                   : 'border-border hover:bg-muted'
                               )}
                             >
@@ -402,7 +402,7 @@ const QRoutePage: React.FC = () => {
                 <button
                   onClick={handleSubmit}
                   disabled={!selectedDevice || !providerConfigured(selectedDevice?.provider ?? '') || submitState === 'submitting' || submitState === 'polling'}
-                  className="w-full py-2 rounded-lg bg-primary text-primary-foreground font-medium text-sm disabled:opacity-50 transition-all"
+                  className="w-full py-2 rounded-lg bg-emerald-500 text-white font-medium text-sm disabled:opacity-50 transition-all"
                 >
                   {submitState === 'submitting'
                     ? 'Submitting...'
@@ -416,7 +416,7 @@ const QRoutePage: React.FC = () => {
                 )}
 
                 {submitState === 'polling' && activeJob && (
-                  <Link to={`/qroute/jobs/${activeJob.id}`} className="block text-[11px] text-primary hover:underline text-center">
+                  <Link to={`/qroute/jobs/${activeJob.id}`} className="block text-[11px] text-emerald-500 hover:underline text-center">
                     View job page &rarr;
                   </Link>
                 )}
@@ -431,7 +431,7 @@ const QRoutePage: React.FC = () => {
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between">
                       <p className="text-[11px] font-mono uppercase tracking-widest text-muted-foreground">Result</p>
-                      <Link to={`/qroute/jobs/${activeJob.id}`} className="text-[11px] text-primary hover:underline">
+                      <Link to={`/qroute/jobs/${activeJob.id}`} className="text-[11px] text-emerald-500 hover:underline">
                         Full report &rarr;
                       </Link>
                     </div>

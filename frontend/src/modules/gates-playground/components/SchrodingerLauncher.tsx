@@ -45,7 +45,7 @@ export const SchrodingerLauncher: React.FC<SchrodingerLauncherProps> = ({ onClic
                 : "opacity-100 scale-100"
             )}
             disabled={isOpen || isAnimating}
-            aria-label="Open Circuit Copilot"
+            aria-label="Open Qrious Code"
           >
             {/* Ambient quantum background aura glow on hover */}
             <div className="absolute -inset-1 rounded-3xl bg-gradient-to-r from-emerald-500/25 via-teal-500/20 to-purple-500/20 blur-md opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
@@ -65,7 +65,7 @@ export const SchrodingerLauncher: React.FC<SchrodingerLauncherProps> = ({ onClic
           "text-xs font-medium border shadow-xl",
           theme === 'dark' ? "bg-zinc-900 text-zinc-100 border-zinc-700" : "bg-white text-zinc-900 border-zinc-200"
         )}>
-          <p>Open Circuit Copilot</p>
+          <p>Open Qrious Code</p>
           <p className={cn("text-[10px]", theme === 'dark' ? "text-zinc-400" : "text-zinc-500")}>Schrödinger is ready to help</p>
         </TooltipContent>
       </Tooltip>

@@ -14,7 +14,7 @@ contributes two things on top of that skeleton:
 Every one of those has a deterministic fallback, so a dead provider costs a plan
 its prose, never its existence.
 """
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Literal, Optional, Sequence
 
 from pydantic import BaseModel, Field
 
@@ -35,48 +35,74 @@ learner's weekly time budget). Do not reorder, add or remove anything.
 
 Your job is to make the plan feel written for this learner:
 
-1. `emphasis`: for each topic slug, choose "light", "normal" or "deep".
+1. `emphasis`: a list with one {"slug", "level"} object per topic slug, where
+   level is exactly one of "light", "normal" or "deep".
    - "light" when their quiz mastery for that topic is already strong (>= 70).
    - "deep" when they have attempted it and scored poorly (< 40).
    - "normal" otherwise, including topics they have never been quizzed on.
    A suggested baseline is provided; change it only where the learner's data
-   justifies it. Every slug listed must appear exactly once.
-2. For each sprint, write a short `title` (max 6 words, concrete, no "Sprint 1"
-   numbering), a `focus_line` (one sentence on what they will be able to do by
-   the end) and `why_it_matters` (one sentence connecting it to the goal).
+   justifies it. Copy each slug exactly as written.
+2. `sprints`: a list with exactly one object per sprint, in the same order the
+   sprints are listed. Each has a short `title` (max 6 words, concrete, no
+   "Sprint 1" numbering), a `focus_line` (one sentence on what they will be able
+   to do by the end) and `why_it_matters` (one sentence connecting it to the goal).
 3. `strategy_note`: 2-3 sentences on how to approach this plan overall.
 4. `personalized_tips`: up to 3 short, specific tips based on their weak areas.
 
 Be concrete and plain. No emoji, no hype, no motivational filler."""
 
 
+# Structured output goes out as a tool call that the provider validates against this schema
+# SERVER-SIDE, before our repair retry can run -- a schema the model misreads is a hard 400.
+# So every field is described, the only hard-required fields are ones the model cannot get
+# wrong, and nothing is keyed by a dynamic map. Two real failures shaped this (2026-09-27):
+#   * `emphasis: Dict[str, str]` let the model write free text ("Focus on foundations...")
+#     instead of light/normal/deep; now a Literal, which becomes an enum the provider enforces.
+#   * `SprintCopy.index` was required and the model sent `slug` instead, so Groq rejected the
+#     whole call. Sprints are now matched by position instead.
+
+class TopicEmphasis(BaseModel):
+    slug: str = Field(description="A topic slug copied exactly from the plan.")
+    level: Literal["light", "normal", "deep"]
+
+
 class SprintCopy(BaseModel):
-    index: int
-    title: str
-    focus_line: str = ""
-    why_it_matters: str = ""
+    title: str = Field(description="Max 6 words, concrete, no 'Sprint 1' style numbering.")
+    focus_line: str = Field(default="", description="One sentence: what they can do by the end of it.")
+    why_it_matters: str = Field(default="", description="One sentence connecting this sprint to the goal.")
 
 
 class PlanNarrative(BaseModel):
-    strategy_note: str = ""
-    personalized_tips: List[str] = Field(default_factory=list)
-    emphasis: Dict[str, str] = Field(default_factory=dict)
-    sprints: List[SprintCopy] = Field(default_factory=list)
+    strategy_note: str = Field(default="", description="2-3 sentences on how to approach the plan.")
+    personalized_tips: List[str] = Field(default_factory=list, description="Up to 3 short, specific tips.")
+    emphasis: List[TopicEmphasis] = Field(
+        default_factory=list, description="One entry per topic slug in the plan.",
+    )
+    sprints: List[SprintCopy] = Field(
+        default_factory=list,
+        description="Exactly one entry per sprint, in the same order the sprints were given.",
+    )
 
 
 # ---------------------------------------------------------------------------
 # Deterministic layer -- also the fallback when the gateway is unavailable
 # ---------------------------------------------------------------------------
 
-def baseline_emphasis(slugs: Sequence[str], mastery_map: Dict[str, float]) -> Dict[str, str]:
+def baseline_emphasis(
+    slugs: Sequence[str],
+    mastery_map: Dict[str, float],
+    unquizzed: Optional[Dict[str, str]] = None,
+) -> Dict[str, str]:
     """Threshold rule over average quiz score per topic. A topic the learner has
-    never been quizzed on is absent from mastery_map and stays "normal" -- that is
-    the common case, and guessing "deep" for it would inflate every new plan."""
+    never been quizzed on takes the level they declared for its subject
+    (`unquizzed`), else "normal" -- guessing "deep" for it would inflate every new
+    plan. Real quiz scores always beat the declared level."""
+    unquizzed = unquizzed or {}
     emphasis: Dict[str, str] = {}
     for slug in slugs:
         score = mastery_map.get(slug)
         if score is None:
-            emphasis[slug] = "normal"
+            emphasis[slug] = unquizzed.get(slug, "normal")
         elif score >= STRONG_MASTERY:
             emphasis[slug] = "light"
         elif score < WEAK_MASTERY:
@@ -143,9 +169,10 @@ def merge_emphasis(narrative: PlanNarrative, baseline: Dict[str, str]) -> Dict[s
     deterministic baseline -- apply_emphasis would ignore a bad value anyway, but
     dropping it here keeps the stored plan honest about what was applied."""
     merged = dict(baseline)
-    for slug, level in (narrative.emphasis or {}).items():
-        if slug in merged and level in ("light", "normal", "deep"):
-            merged[slug] = level
+    for item in narrative.emphasis or []:
+        # `level` is already a Literal, so only an unknown slug can be wrong here.
+        if item.slug in merged:
+            merged[item.slug] = item.level
     return merged
 
 
@@ -154,16 +181,16 @@ def merge_sprint_copy(
     sprints: Sequence[Dict[str, Any]],
     topics_by_slug: Dict[str, Dict[str, Any]],
 ) -> List[Dict[str, Any]]:
-    """Map the model's copy onto the real sprints by index. Sprint composition can
-    shift after emphasis is applied (a lighter topic may pull the next one forward),
-    so any index the model did not cover falls back to a deterministic title."""
+    """Map the model's copy onto the real sprints by position. Sprint composition can
+    shift after emphasis is applied (a lighter topic may pull the next one forward), so
+    any sprint the model did not cover falls back to a deterministic title."""
     fallback = {c["index"]: c for c in deterministic_sprint_copy(sprints, topics_by_slug)}
-    from_model = {c.index: c for c in (narrative.sprints or [])}
+    from_model = list(narrative.sprints or [])
 
     merged: List[Dict[str, Any]] = []
-    for sprint in sprints:
+    for position, sprint in enumerate(sprints):
         index = sprint["index"]
-        written = from_model.get(index)
+        written = from_model[position] if position < len(from_model) else None
         if written and written.title.strip():
             merged.append({
                 "index": index,
@@ -224,6 +251,7 @@ async def generate_narrative(
     deadline: str,
     weekly_minutes: int,
     identity: Optional[str] = None,
+    unquizzed: Optional[Dict[str, str]] = None,
 ) -> Dict[str, Any]:
     """Returns the narrative dict plus `ai_generated`, which the router stores on
     the plan so the UI can be honest about whether a model wrote this copy.
@@ -233,7 +261,7 @@ async def generate_narrative(
     must cost the learner some prose, not their plan. That is the whole reason the
     deterministic layer above exists.
     """
-    baseline = baseline_emphasis(planned_slugs, mastery_map)
+    baseline = baseline_emphasis(planned_slugs, mastery_map, unquizzed)
     if not sprints:
         return deterministic_narrative(sprints, topics_by_slug, baseline)
 

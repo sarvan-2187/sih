@@ -85,7 +85,10 @@ def load_provider_configs() -> dict[str, ProviderConfig]:
         ),
         "gemini": _provider_config(
             "gemini", "GEMINI_API_KEY", "https://generativelanguage.googleapis.com/v1beta/openai",
-            "GEMINI_MODEL", "gemini-2.5-flash",
+            # gemini-2.5-flash started returning 404 "no longer available to new
+            # users" (seen 2026-09-27); 3.8-flash verified live 2026-09-29 for both
+            # plain chat and structured output.
+            "GEMINI_MODEL", "gemini-3.8-flash",
         ),
         "mistral": _provider_config(
             "mistral", "MISTRAL_API_KEY", "https://api.mistral.ai/v1",
@@ -93,7 +96,10 @@ def load_provider_configs() -> dict[str, ProviderConfig]:
         ),
         "nvidia": _provider_config(
             "nvidia", "NVIDIA_API_KEY", "https://integrate.api.nvidia.com/v1",
-            "NVIDIA_MODEL", "meta/llama-3.3-70b-instruct",
+            # meta/llama-3.3-70b-instruct was decommissioned (410 Gone, EOL 2026-08-26).
+            # Nemotron 3 Super is NVIDIA's current generation and is in their live catalog;
+            # not yet call-tested here, since the NVIDIA key in use returns 403 on every model.
+            "NVIDIA_MODEL", "nvidia/nemotron-3-super-120b-a12b",
         ),
         "kimi": _provider_config(
             "kimi", "KIMI_API_KEY", "https://api.moonshot.ai/v1",
@@ -166,7 +172,10 @@ TASK_MODEL_OVERRIDE: dict[tuple[AITask, str], str] = {
     (AITask.QUIZ, "groq"): "openai/gpt-oss-20b",
     (AITask.FLASHCARDS, "groq"): "openai/gpt-oss-20b",
     (AITask.SUMMARIZATION, "groq"): "openai/gpt-oss-20b",
-    (AITask.MINDMAP, "groq"): "openai/gpt-oss-20b",
+    # A different model from FLASHCARDS on purpose, so each has its own Groq tokens-per-
+    # minute bucket: QStudio generates both back-to-back, and sharing one 8k-TPM bucket
+    # made the second request 429 (seen 2026-09-29). A nested tree also suits 120b.
+    (AITask.MINDMAP, "groq"): "openai/gpt-oss-120b",
     (AITask.REASONING, "groq"): "openai/gpt-oss-120b",
     (AITask.BRIEFING, "groq"): "openai/gpt-oss-120b",
     (AITask.STUDY_GUIDE, "groq"): "openai/gpt-oss-120b",

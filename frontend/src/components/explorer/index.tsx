@@ -2,7 +2,7 @@
  * Explorer-style page primitives - the shared implementation of DESIGN_SYSTEM.md section 1.
  *
  * Before this module the page shell, hero and card patterns were copy-pasted across a dozen
- * files, which is why they had already drifted apart. Reference surfaces to match: qStudio
+ * files, which is why they had already drifted apart. Reference surfaces to match: QStudio
  * (QStudioLibraryPage), Roadmap (RoadmapPage) and Algorithm Explorer.
  *
  * These deliberately branch on useTheme() rather than Tailwind's `dark:` variant: theme here
@@ -76,7 +76,7 @@ export function PageShell({ children, width = 'wide', gap = 'default', className
 interface PageHeroProps {
   title: ReactNode;
   subtitle?: ReactNode;
-  /** Rendered on the far right on desktop, below the copy on mobile (qStudio's "New" button). */
+  /** Rendered on the far right on desktop, below the copy on mobile (QStudio's "New" button). */
   action?: ReactNode;
   /** Small breadcrumb / back affordance above the title. */
   eyebrow?: ReactNode;
@@ -214,6 +214,18 @@ export function ExplorerPanel({
   );
 }
 
+/** AccentButton's classes, exported so a router `Link` or an `<a>` can look identical to the
+ *  button without nesting a <button> inside an anchor (invalid HTML, and it breaks keyboard
+ *  focus order). */
+export function accentButtonClass(theme: Theme, variant: 'solid' | 'outline' = 'solid') {
+  return cn(
+    'px-6 py-2.5 rounded-lg font-medium text-sm transition-colors disabled:opacity-50 flex items-center gap-2 w-fit',
+    variant === 'solid'
+      ? 'bg-emerald-500 text-white shadow hover:bg-emerald-600'
+      : cn('border', tone.panel(theme), 'hover:border-emerald-500/50 hover:text-emerald-500'),
+  );
+}
+
 /** DESIGN_SYSTEM.md 1.8. Emerald, not the purple `primary` token used on admin pages. */
 export function AccentButton({
   children,
@@ -222,6 +234,7 @@ export function AccentButton({
   type = 'button',
   variant = 'solid',
   className,
+  ariaLabel,
 }: {
   children: ReactNode;
   onClick?: () => void;
@@ -229,6 +242,7 @@ export function AccentButton({
   type?: 'button' | 'submit';
   variant?: 'solid' | 'outline';
   className?: string;
+  ariaLabel?: string;
 }) {
   const { theme } = useTheme();
   return (
@@ -236,16 +250,168 @@ export function AccentButton({
       type={type}
       onClick={onClick}
       disabled={disabled}
+      aria-label={ariaLabel}
+      className={cn(accentButtonClass(theme, variant), className)}
+    >
+      {children}
+    </button>
+  );
+}
+
+/** A small rounded status label. `accent` for good/active states, `danger` for failure,
+ *  `neutral` for plain metadata. */
+export function Pill({
+  children,
+  variant = 'neutral',
+  className,
+  title,
+}: {
+  children: ReactNode;
+  variant?: 'neutral' | 'accent' | 'danger';
+  className?: string;
+  title?: string;
+}) {
+  const { theme } = useTheme();
+  return (
+    <span
+      title={title}
       className={cn(
-        'px-6 py-2.5 rounded-lg font-medium text-sm transition-colors disabled:opacity-50 flex items-center gap-2 w-fit',
-        variant === 'solid'
-          ? 'bg-emerald-500 text-white shadow hover:bg-emerald-600'
-          : cn('border', tone.panel(theme), 'hover:border-emerald-500/50 hover:text-emerald-500'),
+        'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium shrink-0',
+        variant === 'neutral' && tone.badge(theme),
+        variant === 'accent' &&
+          cn('bg-emerald-500/10 border-emerald-500/30', theme === 'dark' ? 'text-emerald-400' : 'text-emerald-600'),
+        variant === 'danger' && 'bg-red-500/10 border-red-500/30 text-red-500',
         className,
       )}
     >
       {children}
-    </button>
+    </span>
+  );
+}
+
+/** Emerald fill on the skeleton track colour. Exposed to assistive tech as a real progressbar. */
+export function ProgressBar({
+  value,
+  label,
+  className,
+}: {
+  value: number;
+  label: string;
+  className?: string;
+}) {
+  const { theme } = useTheme();
+  const clamped = Math.max(0, Math.min(100, Math.round(value)));
+  return (
+    <div
+      role="progressbar"
+      aria-label={label}
+      aria-valuenow={clamped}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      className={cn('h-2 w-full overflow-hidden rounded-full', tone.skeleton(theme), className)}
+    >
+      <div
+        className="h-full rounded-full bg-emerald-500 transition-all duration-500"
+        style={{ width: `${clamped}%` }}
+      />
+    </div>
+  );
+}
+
+interface ExplorerTab<T extends string> {
+  value: T;
+  label: ReactNode;
+  icon?: ReactNode;
+}
+
+/** A segmented tab strip for explorer pages. Callers render only the active panel inside
+ *  `ExplorerTabPanel`, so inactive tabs stay unmounted and do not fetch until opened.
+ *  Arrow keys, Home and End move between tabs per the WAI-ARIA tabs pattern. */
+export function ExplorerTabs<T extends string>({
+  tabs,
+  value,
+  onChange,
+  label,
+  idPrefix,
+}: {
+  tabs: ExplorerTab<T>[];
+  value: T;
+  onChange: (next: T) => void;
+  /** Accessible name for the tab strip, e.g. "Profile sections". */
+  label: string;
+  /** Unique per page; ties each tab to its panel for screen readers. */
+  idPrefix: string;
+}) {
+  const { theme } = useTheme();
+
+  const moveTo = (index: number, strip: HTMLElement | null) => {
+    const wrapped = (index + tabs.length) % tabs.length;
+    onChange(tabs[wrapped].value);
+    (strip?.children[wrapped] as HTMLElement | undefined)?.focus();
+  };
+
+  return (
+    <div
+      role="tablist"
+      aria-label={label}
+      className={cn('inline-flex w-fit gap-1 rounded-xl border p-1 shadow-sm', tone.panel(theme))}
+    >
+      {tabs.map((tab, index) => {
+        const active = tab.value === value;
+        return (
+          <button
+            key={tab.value}
+            type="button"
+            role="tab"
+            id={`${idPrefix}-tab-${tab.value}`}
+            aria-selected={active}
+            aria-controls={`${idPrefix}-panel-${tab.value}`}
+            tabIndex={active ? 0 : -1}
+            onClick={() => onChange(tab.value)}
+            onKeyDown={(event) => {
+              const strip = event.currentTarget.parentElement;
+              if (event.key === 'ArrowRight') { event.preventDefault(); moveTo(index + 1, strip); }
+              else if (event.key === 'ArrowLeft') { event.preventDefault(); moveTo(index - 1, strip); }
+              else if (event.key === 'Home') { event.preventDefault(); moveTo(0, strip); }
+              else if (event.key === 'End') { event.preventDefault(); moveTo(tabs.length - 1, strip); }
+            }}
+            className={cn(
+              'flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors',
+              active
+                ? 'bg-emerald-500 text-white shadow'
+                : cn(tone.secondary(theme), 'hover:text-emerald-500'),
+            )}
+          >
+            {tab.icon}
+            {tab.label}
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
+/** The panel for the active `ExplorerTabs` tab. Render only the active one. */
+export function ExplorerTabPanel({
+  idPrefix,
+  value,
+  children,
+  className,
+}: {
+  idPrefix: string;
+  value: string;
+  children: ReactNode;
+  className?: string;
+}) {
+  return (
+    <div
+      role="tabpanel"
+      id={`${idPrefix}-panel-${value}`}
+      aria-labelledby={`${idPrefix}-tab-${value}`}
+      className={className}
+    >
+      {children}
+    </div>
   );
 }
 

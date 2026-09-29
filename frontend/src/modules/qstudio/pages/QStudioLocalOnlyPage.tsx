@@ -19,9 +19,9 @@ const QStudioLocalOnlyPage: React.FC = () => {
         )}>
           <Laptop className="w-7 h-7" />
         </div>
-        <h1 className="text-2xl font-sans tracking-tight">qStudio is a local-only feature</h1>
+        <h1 className="text-2xl font-sans tracking-tight">QStudio is a local-only feature</h1>
         <p className={cn("text-sm leading-relaxed", theme === 'dark' ? "text-zinc-400" : "text-zinc-600")}>
-          qStudio depends on rendering and indexing services that aren't deployed to a cloud host yet.
+          QStudio depends on rendering and indexing services that aren't deployed to a cloud host yet.
           Run Qrious locally to use Sources, Q&amp;A, and Studio outputs.
         </p>
         <Link

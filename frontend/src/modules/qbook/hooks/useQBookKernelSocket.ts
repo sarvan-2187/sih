@@ -81,7 +81,7 @@ export const useQBookKernelSocket = (notebookId: string) => {
         ({ session_token: sessionToken } = await createSession(notebookId));
       } catch (err: any) {
         const detail = err.response?.data?.detail || err.message || 'unknown error';
-        throw new Error(`Could not start a qBook session (backend rejected the request: ${detail})`);
+        throw new Error(`Could not start a QBook session (backend rejected the request: ${detail})`);
       }
 
       const socket = new WebSocket(`${QBOOK_SERVICE_URL}/ws/session?token=${encodeURIComponent(sessionToken)}`);
@@ -135,7 +135,7 @@ export const useQBookKernelSocket = (notebookId: string) => {
       await new Promise<void>((resolve, reject) => {
         socket.onopen = () => resolve();
         socket.onerror = () => reject(new Error(
-          `Could not reach the qBook kernel service at ${QBOOK_SERVICE_URL} — is notebook_service running?`,
+          `Could not reach the QBook kernel service at ${QBOOK_SERVICE_URL} — is notebook_service running?`,
         ));
       });
 

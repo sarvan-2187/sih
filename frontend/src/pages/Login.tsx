@@ -11,15 +11,16 @@ import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 import { FaGithub } from 'react-icons/fa';
 import { FcGoogle } from 'react-icons/fc';
 import { isStaff, onboardingPath } from '@/lib/roles';
-import { Eye, EyeOff, GraduationCap, Presentation, FlaskConical, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff } from 'lucide-react';
 
 const DEMO_PASSWORD = 'Demo@1234';
 const DEMO_ADMIN_EMAIL = 'demo-admin@gmail.com';
-const DEMO_ACCOUNTS = [
-  { label: 'Student', email: 'demo-student@gmail.com', icon: GraduationCap },
-  { label: 'Educator', email: 'demo-educator@gmail.com', icon: Presentation },
-  { label: 'Researcher', email: 'demo-researcher@gmail.com', icon: FlaskConical },
-  { label: 'Admin', email: DEMO_ADMIN_EMAIL, icon: ShieldCheck, note: 'UI mockup' },
+// The admin account opens a read-only preview, never real admin access.
+const DEMO_ACCOUNTS: { label: string; email: string; note?: string }[] = [
+  { label: 'Student', email: 'demo-student@gmail.com' },
+  { label: 'Educator', email: 'demo-educator@gmail.com' },
+  { label: 'Researcher', email: 'demo-researcher@gmail.com' },
+  { label: 'Admin', email: DEMO_ADMIN_EMAIL, note: 'read-only preview' },
 ];
 
 export default function Login() {
@@ -253,38 +254,34 @@ export default function Login() {
             </Button>
           </form>
 
-          <div className="rounded-xl border border-border/50 bg-muted/40 p-4 space-y-3">
-            <div className="flex items-baseline justify-between gap-2">
-              <p className="text-sm font-medium">Demo accounts</p>
+          {/* A plain list, one row per role: the full email is the useful part, so it is never
+              truncated, and each row is a real button so it works from the keyboard. */}
+          <div className="rounded-xl border border-border/60">
+            <div className="flex items-baseline justify-between gap-3 px-4 pt-3.5 pb-2.5">
+              <p className="text-sm font-medium">Try a demo account</p>
               <p className="text-xs text-muted-foreground">
-                Password: <span className="font-mono text-foreground">{DEMO_PASSWORD}</span>
+                password <span className="font-mono text-foreground">{DEMO_PASSWORD}</span>
               </p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {DEMO_ACCOUNTS.map(({ label, email: demoEmail, icon: Icon, note }) => (
-                <button
-                  key={demoEmail}
-                  type="button"
-                  onClick={() => handleDemoLogin(demoEmail)}
-                  disabled={loading}
-                  className="flex items-start gap-2 rounded-lg border border-border/50 bg-card p-2.5 text-left transition-colors hover:border-primary/40 hover:bg-accent disabled:opacity-50"
-                >
-                  <Icon className="h-4 w-4 mt-0.5 shrink-0 text-primary" />
-                  <span className="min-w-0">
-                    <span className="flex items-center gap-1.5 text-sm font-medium">
+            <ul className="divide-y divide-border/60 border-t border-border/60">
+              {DEMO_ACCOUNTS.map(({ label, email: demoEmail, note }) => (
+                <li key={demoEmail}>
+                  <button
+                    type="button"
+                    onClick={() => handleDemoLogin(demoEmail)}
+                    disabled={loading}
+                    aria-label={`Sign in as the demo ${label.toLowerCase()}`}
+                    className="flex w-full items-baseline justify-between gap-4 px-4 py-2.5 text-left text-sm transition-colors hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-ring disabled:opacity-50"
+                  >
+                    <span className="shrink-0 font-medium">
                       {label}
-                      {note && (
-                        <span className="rounded bg-primary/10 px-1.5 py-px text-[10px] uppercase tracking-wide text-primary">{note}</span>
-                      )}
+                      {note && <span className="ml-2 font-normal text-muted-foreground">{note}</span>}
                     </span>
-                    <span className="block truncate font-mono text-[11px] text-muted-foreground">{demoEmail}</span>
-                  </span>
-                </button>
+                    <span className="min-w-0 break-all text-right text-muted-foreground">{demoEmail}</span>
+                  </button>
+                </li>
               ))}
-            </div>
-            <p className="text-xs text-muted-foreground">
-              Click an account to sign in. Researchers get every educator feature plus mentorship from verified professors. The Admin demo is a read-only UI mockup showing what admins can access.
-            </p>
+            </ul>
           </div>
 
           {role === 'learner' && (

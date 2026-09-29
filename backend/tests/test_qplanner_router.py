@@ -305,6 +305,53 @@ def test_mastery_drives_emphasis():
     }
 
 
+# ---------------- the schema the provider validates (regression: 2026-09-27 400s) ----------------
+
+def test_schema_sent_to_provider_constrains_levels_and_drops_index():
+    """Groq validates tool-call arguments against this schema server-side. A free-form
+    emphasis map let the model write prose instead of a level, and a required sprint
+    `index` it did not send got the whole call rejected with a 400."""
+    schema = qplanner_ai.PlanNarrative.model_json_schema()
+    level = schema["$defs"]["TopicEmphasis"]["properties"]["level"]
+    assert level["enum"] == ["light", "normal", "deep"]
+    assert schema["properties"]["emphasis"]["type"] == "array"
+    assert "index" not in schema["$defs"]["SprintCopy"]["properties"]
+
+
+def test_invalid_emphasis_level_is_rejected():
+    from pydantic import ValidationError
+
+    try:
+        qplanner_ai.TopicEmphasis(slug="a", level="extremely-deep")
+    except ValidationError:
+        pass
+    else:
+        raise AssertionError("an emphasis level outside light/normal/deep must not validate")
+
+
+def test_model_emphasis_merges_and_ignores_unknown_slugs():
+    narrative = qplanner_ai.PlanNarrative(emphasis=[
+        qplanner_ai.TopicEmphasis(slug="a", level="deep"),
+        qplanner_ai.TopicEmphasis(slug="not-in-the-plan", level="light"),
+    ])
+    merged = qplanner_ai.merge_emphasis(narrative, {"a": "normal", "b": "normal"})
+    assert merged == {"a": "deep", "b": "normal"}
+
+
+def test_sprint_copy_maps_by_position_and_falls_back_when_short():
+    from services.qplanner_schedule import index_topics
+
+    sprints = [
+        {"index": 0, "topic_slugs": ["a"], "planned_minutes": 60},
+        {"index": 1, "topic_slugs": ["b"], "planned_minutes": 60},
+    ]
+    narrative = qplanner_ai.PlanNarrative(sprints=[qplanner_ai.SprintCopy(title="First steps")])
+    merged = qplanner_ai.merge_sprint_copy(narrative, sprints, index_topics(TOPICS))
+
+    assert merged[0]["title"] == "First steps"
+    assert merged[1]["title"] == "B", "a sprint the model skipped falls back to its topic's title"
+
+
 if __name__ == "__main__":
     failures = 0
     for name, fn in sorted(globals().items()):
@@ -317,3 +364,29 @@ if __name__ == "__main__":
                 print("FAIL " + name + ": " + repr(exc))
     print(("FAILURES: " + str(failures)) if failures else "all router checks passed")
     sys.exit(1 if failures else 0)
+
+
+def test_day_minutes_replace_weekly_budget_and_study_days():
+    from datetime import date as _date
+    from routers.qplanner_router import PlanRequest
+    from services.qplanner_ai import baseline_emphasis
+
+    req = PlanRequest(preset_slug="algorithms-sprint", day_minutes=[60, 0, 60, 0, 60, 90, 0])
+    assert req.weekly_minutes == 270
+    assert req.study_days == [0, 2, 4, 5]
+    assert req.deadline is None
+
+    try:
+        PlanRequest(preset_slug="algorithms-sprint", day_minutes=[0] * 7)
+        assert False, "an all-zero week must be rejected"
+    except ValueError:
+        pass
+    try:
+        PlanRequest(preset_slug="x", weekly_minutes=300, start_date=_date(2000, 1, 1))
+        assert False, "a start date in the past must be rejected"
+    except ValueError:
+        pass
+
+    # declared level only fills in for topics with no quiz history
+    emphasis = baseline_emphasis(["a", "b"], {"a": 95.0}, {"a": "deep", "b": "deep"})
+    assert emphasis == {"a": "light", "b": "deep"}

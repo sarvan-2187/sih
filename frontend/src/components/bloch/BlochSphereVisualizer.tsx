@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import GIF from 'gif.js';
 import type { QubitState, TrajectoryPoint, PulseParams } from './types/quantum';
 import { CircuitCopilotSidebar } from '@/modules/gates-playground/components/CircuitCopilotSidebar';
+import { useQriousCodeCircuit } from '@/features/qrious-code/QriousCode';
 import { SchrodingerLauncher } from '@/modules/gates-playground/components/SchrodingerLauncher';
 import { CatOverlay } from '@/modules/gates-playground/components/CatOverlay';
 import { COPILOT_WIDTH } from '@/modules/gates-playground/constants/layout';
@@ -25,6 +26,11 @@ import { TasksPanel } from './components/TasksPanel';
 import { toast } from 'sonner';
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
+
+// Legacy per-page Circuit Copilot launcher + Schrodinger's-cat animation. Superseded by the
+// app-wide Qrious Code panel (header button, see features/qrious-code). Switched off rather
+// than deleted so it can be restored after the demo: set this to true.
+const LEGACY_CIRCUIT_COPILOT_UI = false;
 
 // Emerald action button — matching Qrious design language
 function ActionBtn({
@@ -291,6 +297,9 @@ export const BlochSphereVisualizer: React.FC = () => {
     gateCount: history.length - 1,
   };
 
+  // Lets the global Qrious Code panel see this circuit and apply code into it.
+  useQriousCodeCircuit(currentCircuitContext, handleApplyCode);
+
   return (
     <div className="flex h-[calc(100vh-3.5rem)] w-full overflow-hidden">
       <div className={cn(
@@ -398,6 +407,9 @@ export const BlochSphereVisualizer: React.FC = () => {
         </div>
       </div>
 
+      {/* Legacy Circuit Copilot UI, now served app-wide by Qrious Code. Restore: LEGACY_CIRCUIT_COPILOT_UI = true. */}
+      {LEGACY_CIRCUIT_COPILOT_UI && (
+      <>
       {/* Floating Action Button for AI Copilot */}
       <div className="fixed bottom-10 right-10 z-50">
         <SchrodingerLauncher anchorRef={launcherRef} onClick={toggleAiTutor} isOpen={aiTutorOpen} />
@@ -427,6 +439,8 @@ export const BlochSphereVisualizer: React.FC = () => {
         isCatInCopilot={isCatInCopilot}
         onCatArrived={() => setIsCatInCopilot(true)}
       />
+      </>
+      )}
     </div>
   );
 };

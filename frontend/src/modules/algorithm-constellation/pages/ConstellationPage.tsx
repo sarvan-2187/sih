@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo, useCallback, lazy, Suspense } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, SlidersHorizontal, Network, ChevronDown, RotateCw, ZoomIn, Circle, Zap } from 'lucide-react';
+import { Search, SlidersHorizontal, ChevronDown, RotateCw, ZoomIn, Circle, Zap } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -142,13 +142,12 @@ const ConstellationPage: React.FC = () => {
     >
       {/* ─── Main Content Area (shrinks when sidebar is open) ─── */}
       <div className={cn(
-        'relative h-full transition-all duration-300 shrink-0 w-full'
+        'relative h-full transition-all duration-300 shrink-0 w-full flex flex-col'
       )}>
         {/* ─── 3D Canvas ───
-          Starts below the toolbar rather than at inset-0: the toolbar is an
-          overlay, so a full-bleed canvas centred the globe on the container and
-          pushed it visually low, behind the toolbar. */}
-      <div className="absolute inset-x-0 bottom-0 top-26">
+          Fills whatever height the header leaves (order-2 in the column), so the
+          globe is always centred in the visible area below the page header. */}
+      <div className="relative order-2 flex-1 min-h-0">
         <Suspense fallback={null}>
           {!loading && algorithms.length > 0 && (
             <ConstellationScene
@@ -167,35 +166,31 @@ const ConstellationPage: React.FC = () => {
       {/* ─── Entry animation hint ─── */}
       <EntryHint isInteractive={isInteractive || loading} />
 
-      {/* ─── Top toolbar (glass overlay) ─── */}
-      <div className={cn(
-        'absolute top-0 left-0 right-0 z-20 px-5 flex flex-col justify-center gap-2',
-        'h-[104px] border-b transition-colors',
-        isDark
-          ? 'bg-zinc-950/70 border-white/6 backdrop-blur-xl'
-          : 'bg-white/80 border-zinc-200/80 backdrop-blur-xl'
-      )}>
+      {/* ─── Page header ───
+          Same treatment as PageHero (Playground Hub, QStudio, QBook): large title,
+          text-lg subtitle, identical padding and entrance timing. */}
+      <div className="relative order-1 z-20 shrink-0 px-6 md:px-12 pt-12 pb-6 flex flex-col gap-6 transition-colors">
         {/* Title row */}
-        <div className="flex items-center justify-between gap-4 flex-wrap">
-          <div className="flex items-center gap-3">
-            <div
-              className={cn(
-                'flex items-center justify-center w-8 h-8 rounded-lg border',
-                isDark ? 'bg-white text-zinc-900 border-zinc-200' : 'bg-zinc-900 text-white border-zinc-800'
-              )}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div className="flex flex-col gap-4 max-w-3xl">
+            <motion.h1
+              className={cn('text-4xl md:text-5xl font-sans tracking-tight', isDark ? 'text-white' : 'text-zinc-900')}
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
             >
-              <Network size={16} />
-            </div>
-            <div>
-              <h1 className={cn('text-lg font-sans leading-none tracking-tight', isDark ? 'text-white' : 'text-zinc-900')}>
-                Algorithm Constellation
-              </h1>
-              <p className={cn('text-xs mt-0.5', isDark ? 'text-zinc-500' : 'text-zinc-600')}>
-                {selectedDomain
-                  ? `${selectedDomain} — ${filteredAlgorithms.filter(a => getAlgorithmDomain(a.category ?? '', a.name) === selectedDomain).length} algorithms`
-                  : 'Click a domain node to explore'}
-              </p>
-            </div>
+              Algorithm Constellation
+            </motion.h1>
+            <motion.p
+              className={cn('text-lg', isDark ? 'text-zinc-400' : 'text-zinc-600')}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.1 }}
+            >
+              {selectedDomain
+                ? `${selectedDomain} — ${filteredAlgorithms.filter(a => getAlgorithmDomain(a.category ?? '', a.name) === selectedDomain).length} algorithms`
+                : 'Every major quantum algorithm, mapped by domain. Click a domain node to explore.'}
+            </motion.p>
           </div>
 
           {/* Breadcrumb when domain selected */}

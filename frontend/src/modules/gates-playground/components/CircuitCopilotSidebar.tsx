@@ -18,7 +18,10 @@ interface CircuitCopilotSidebarProps {
   circuitContext: CircuitContext;
   isOpen: boolean;
   onClose: () => void;
-  onApplyCode: (code: string) => void;
+  /** Omitted on pages with no circuit, which hides the Apply button on code blocks. */
+  onApplyCode?: (code: string) => void;
+  /** False when Qrious Code is opened from a page that has no circuit to inspect. */
+  hasCircuit?: boolean;
   anchorRef?: React.RefObject<HTMLDivElement | null>;
   isCatInCopilot?: boolean;
   copilotWidth: number;
@@ -30,6 +33,7 @@ export const CircuitCopilotSidebar: React.FC<CircuitCopilotSidebarProps> = ({
   isOpen, 
   onClose, 
   onApplyCode, 
+  hasCircuit = true,
   anchorRef,
   isCatInCopilot,
   copilotWidth,
@@ -87,13 +91,15 @@ export const CircuitCopilotSidebar: React.FC<CircuitCopilotSidebarProps> = ({
 
   useEffect(() => {
     if (messages.length === 0) {
-      if (circuitContext.gateCount === 0) {
+      if (!hasCircuit) {
+        setMessages([{ role: 'assistant', content: "I'm Qrious Code. Ask me about any quantum concept, or have me write and explain Qiskit or OpenQASM code." }]);
+      } else if (circuitContext.gateCount === 0) {
         setMessages([{ role: 'assistant', content: "Start building your circuit and I can explain gates, suggest structures, and help you debug it." }]);
       } else {
         setMessages([{ role: 'assistant', content: "I can see your current circuit. What would you like to understand or improve?" }]);
       }
     }
-  }, [circuitContext.gateCount, messages.length]);
+  }, [circuitContext.gateCount, messages.length, hasCircuit]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -162,10 +168,12 @@ export const CircuitCopilotSidebar: React.FC<CircuitCopilotSidebarProps> = ({
                 </div>
               )}
             </div>
-            Circuit Copilot
+            Qrious Code
           </div>
           <div className="text-[10px] text-qp-text-muted font-mono mt-1">
-            {circuitContext.qubits} qubits • {circuitContext.cbits} cbits • {circuitContext.gateCount} gates
+            {hasCircuit
+              ? `${circuitContext.qubits} qubits • ${circuitContext.cbits} cbits • ${circuitContext.gateCount} gates`
+              : 'Quantum coding assistant'}
           </div>
         </div>
         <button onClick={onClose} className="hover:bg-qp-hover text-qp-text-muted hover:text-qp-text p-2 rounded-lg transition-colors">
@@ -174,6 +182,7 @@ export const CircuitCopilotSidebar: React.FC<CircuitCopilotSidebarProps> = ({
       </div>
       
       <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-qp-bg/30 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+        {hasCircuit && (
         <div className="flex gap-2 overflow-x-auto pb-2 whitespace-nowrap mb-2 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
           <button onClick={() => handleAction('explain')} className="text-xs bg-qp-card hover:bg-qp-hover text-qp-text px-3 py-1.5 rounded-lg flex items-center gap-1.5 border border-qp-border transition-colors font-medium shadow-sm">
             <FaInfoCircle className="text-blue-400" /> Explain
@@ -185,6 +194,7 @@ export const CircuitCopilotSidebar: React.FC<CircuitCopilotSidebarProps> = ({
             <FaExclamationTriangle className="text-orange-500" /> Find Mistakes
           </button>
         </div>
+        )}
 
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
@@ -221,7 +231,7 @@ export const CircuitCopilotSidebar: React.FC<CircuitCopilotSidebarProps> = ({
           value={input}
           onChange={e => setInput(e.target.value)}
           onKeyDown={handleInputKeyDown}
-          placeholder="Ask about your circuit..." 
+          placeholder={hasCircuit ? 'Ask about your circuit...' : 'Ask about quantum code...'}
           className="flex-1 bg-qp-bg text-qp-text border border-qp-border rounded-xl px-3 py-2 outline-none focus:border-emerald-500 transition-colors text-sm"
         />
         <button 

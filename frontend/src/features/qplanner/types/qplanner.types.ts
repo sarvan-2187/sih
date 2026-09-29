@@ -105,30 +105,54 @@ export interface Preset {
   default_weekly_minutes: number;
 }
 
+export interface PreviewTopic {
+  slug: string;
+  title: string;
+  domain: string;
+  minutes: number;
+}
+
 export interface PlanPreview {
   goal_label: string;
   topic_count: number;
   already_completed: number;
   sprint_count: number;
   total_minutes: number;
+  start_date: string;
+  end_date: string;
+  topics: PreviewTopic[];
+  sprints: { index: number; topic_slugs: string[]; planned_minutes: number }[];
   feasibility: Feasibility;
 }
 
+export type SubjectLevel = 'zero' | 'basics' | 'revision';
+
 export interface PlanRequest {
   preset_slug: string;
-  deadline: string;          // YYYY-MM-DD
-  weekly_minutes: number;
-  study_days: number[];      // 0 = Monday .. 6 = Sunday
+  deadline?: string | null;  // YYYY-MM-DD; omitted = finish when the schedule does
+  start_date?: string;
+  name?: string;
+  weekly_minutes?: number;
+  study_days?: number[];     // 0 = Monday .. 6 = Sunday
+  day_minutes?: number[];    // 7 values; replaces weekly_minutes + study_days
   target_domains?: string[] | null;
+  domain_levels?: Record<string, SubjectLevel>;
 }
 
+export interface SprintQuizOption {
+  id: string;
+  text: string;
+}
+
+// Mirrors backend/services/quiz_seed.py: the question text is `prompt`, options are
+// {id, text} objects, and the grader compares the chosen option's `id`.
 export interface SprintQuizQuestion {
   _id: string;
-  question?: string;
+  prompt: string;
   type?: string;
-  options?: unknown;
+  options: SprintQuizOption[];
   difficulty?: string;
-  [key: string]: unknown;
+  concept?: string;
 }
 
 export interface SprintQuizPaper {

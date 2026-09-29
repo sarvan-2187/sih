@@ -1235,6 +1235,14 @@ SEED_QUESTIONS: List[Dict[str, Any]] = [
     }
 ]
 
+# Questions for the 53 roadmap topics the list above never covered (every quantum-ML topic
+# plus the maths and physics foundations) -- without them those sprint and practice quizzes
+# had nothing to draw from. See services/quiz_seed_gaps.py.
+from services.quiz_seed_gaps import GAP_QUESTIONS  # noqa: E402
+
+SEED_QUESTIONS = SEED_QUESTIONS + GAP_QUESTIONS
+
+
 async def seed_quiz_questions(db: AsyncIOMotorDatabase):
     """
     Seeds questions into the 'quiz_questions' collection.

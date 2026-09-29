@@ -99,7 +99,7 @@ export const QCompareCard: React.FC<QCompareCardProps> = ({ jobId, isSimulator }
             onClick={handleGenerate}
             disabled={generating || isSimulator}
             title={isSimulator ? 'qCompare only applies to real hardware runs, not simulator/mock endpoints' : undefined}
-            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-primary text-primary-foreground text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-md bg-emerald-500 text-white text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed hover:opacity-90 transition-opacity"
           >
             {generating ? <FaCircleNotch className="animate-spin w-3 h-3" /> : <FaMagic className="w-3 h-3" />}
             {generating ? 'Comparing against an ideal simulation…' : 'Explain the gap (qCompare)'}
@@ -108,10 +108,10 @@ export const QCompareCard: React.FC<QCompareCardProps> = ({ jobId, isSimulator }
             <p className="text-xs text-muted-foreground">Not available for simulator/mock devices.</p>
           )}
           {generating && (
-            <div className="flex w-full gap-2.5 rounded-lg border border-dashed border-primary/30 bg-primary/5 p-3">
-              <FaCircleNotch className="animate-spin w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+            <div className="flex w-full gap-2.5 rounded-lg border border-dashed border-emerald-500/30 bg-emerald-500/5 p-3">
+              <FaCircleNotch className="animate-spin w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
               <div>
-                <p className="text-[10px] font-mono uppercase tracking-widest text-primary mb-1">
+                <p className="text-[10px] font-mono uppercase tracking-widest text-emerald-500 mb-1">
                   Explained Simply
                 </p>
                 <p className="text-sm text-muted-foreground">Writing a plain-English explanation of this run…</p>
@@ -152,12 +152,12 @@ export const QCompareCard: React.FC<QCompareCardProps> = ({ jobId, isSimulator }
         </div>
 
         {(generating || report.simple_explanation) && (
-          <div className="flex gap-2.5 rounded-lg border border-primary/20 bg-primary/5 p-3">
+          <div className="flex gap-2.5 rounded-lg border border-emerald-500/20 bg-emerald-500/5 p-3">
             {generating ? (
               <>
-                <FaCircleNotch className="animate-spin w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                <FaCircleNotch className="animate-spin w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-primary mb-1">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-emerald-500 mb-1">
                     Explained Simply
                   </p>
                   <p className="text-sm text-muted-foreground">Writing a plain-English explanation of this run…</p>
@@ -165,9 +165,9 @@ export const QCompareCard: React.FC<QCompareCardProps> = ({ jobId, isSimulator }
               </>
             ) : (
               <>
-                <FaLightbulb className="w-3.5 h-3.5 text-primary shrink-0 mt-0.5" />
+                <FaLightbulb className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-[10px] font-mono uppercase tracking-widest text-primary mb-1">
+                  <p className="text-[10px] font-mono uppercase tracking-widest text-emerald-500 mb-1">
                     Explained Simply
                   </p>
                   <p className="text-sm leading-relaxed">{report.simple_explanation}</p>

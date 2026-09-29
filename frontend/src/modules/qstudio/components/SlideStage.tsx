@@ -10,7 +10,6 @@ interface ThemeTokens {
   accent: string;
   cardBg: string;
   cardBorder: string;
-  serifTitle: boolean;
 }
 
 // JS mirror of qstudio_service/templates/slides/{theme}.html's CSS tokens — kept in
@@ -26,7 +25,6 @@ const THEME_TOKENS: Record<SlideTheme, ThemeTokens> = {
     accent: '#34d399',
     cardBg: 'rgba(255,255,255,0.03)',
     cardBorder: 'rgba(255,255,255,0.1)',
-    serifTitle: false,
   },
   bold_gradient: {
     background: 'linear-gradient(135deg, #ff2fb8 0%, #ff6a3d 32%, #ffb800 52%, #00d4ff 78%, #7c3aed 100%)',
@@ -36,7 +34,6 @@ const THEME_TOKENS: Record<SlideTheme, ThemeTokens> = {
     accent: '#ffffff',
     cardBg: 'rgba(10,0,20,0.42)',
     cardBorder: 'rgba(255,255,255,0.35)',
-    serifTitle: false,
   },
   academic_light: {
     background: '#faf7f0',
@@ -45,7 +42,6 @@ const THEME_TOKENS: Record<SlideTheme, ThemeTokens> = {
     accent: '#b08a3e',
     cardBg: '#ffffff',
     cardBorder: '#dcd5c4',
-    serifTitle: true,
   },
 };
 
@@ -61,7 +57,6 @@ interface SlideStageProps {
 
 export const SlideStage: React.FC<SlideStageProps> = ({ slide, theme, index, total }) => {
   const t = THEME_TOKENS[theme];
-  const titleFont = t.serifTitle ? 'font-serif' : 'font-sans';
 
   return (
     <div
@@ -80,7 +75,7 @@ export const SlideStage: React.FC<SlideStageProps> = ({ slide, theme, index, tot
         <div className="flex-1 min-h-0 flex flex-col">
           {slide.layout === 'title' && (
             <div className="flex-1 flex flex-col items-center justify-center text-center gap-4">
-              <h1 className={cn('text-4xl font-semibold leading-tight max-w-xl', titleFont)}>{slide.title}</h1>
+              <h1 className={cn('text-4xl font-semibold leading-tight max-w-xl font-sans')}>{slide.title}</h1>
               {slide.subtitle && (
                 <p className="text-base max-w-md" style={{ color: t.subtext }}>{slide.subtitle}</p>
               )}
@@ -90,13 +85,13 @@ export const SlideStage: React.FC<SlideStageProps> = ({ slide, theme, index, tot
           {slide.layout === 'section' && (
             <div className="flex-1 flex flex-col items-center justify-center gap-5">
               <div className="w-14 h-1 rounded-full" style={{ background: t.accent }} />
-              <h2 className={cn('text-3xl font-semibold text-center max-w-md', titleFont)}>{slide.title}</h2>
+              <h2 className={cn('text-3xl font-semibold text-center max-w-md font-sans')}>{slide.title}</h2>
             </div>
           )}
 
           {slide.layout === 'quote' && (
             <div className="flex-1 flex flex-col justify-center gap-4">
-              <div className="text-7xl leading-none font-serif" style={{ color: t.accent, opacity: 0.4 }}>&ldquo;</div>
+              <div className="text-7xl leading-none font-sans" style={{ color: t.accent, opacity: 0.4 }}>&ldquo;</div>
               <p className="text-xl italic leading-snug max-w-lg">{slide.quote}</p>
               {slide.attribution && (
                 <p className="text-xs text-right" style={{ color: t.subtext }}>&mdash; {slide.attribution}</p>
@@ -106,7 +101,7 @@ export const SlideStage: React.FC<SlideStageProps> = ({ slide, theme, index, tot
 
           {slide.layout === 'comparison' && (
             <>
-              <h3 className={cn('text-xl font-semibold mb-4 shrink-0', titleFont)}>{slide.title}</h3>
+              <h3 className={cn('text-xl font-semibold mb-4 shrink-0 font-sans')}>{slide.title}</h3>
               <div className="flex-1 flex gap-6 min-h-0">
                 <div className="flex-1 flex flex-col gap-2.5 overflow-hidden">
                   <p className="text-xs font-semibold" style={{ color: t.accent }}>{slide.left_label}</p>
@@ -127,7 +122,7 @@ export const SlideStage: React.FC<SlideStageProps> = ({ slide, theme, index, tot
 
           {slide.layout === 'stat' && (
             <div className="flex-1 flex flex-col justify-center gap-7">
-              <h3 className={cn('text-xl font-semibold', titleFont)}>{slide.title}</h3>
+              <h3 className={cn('text-xl font-semibold font-sans')}>{slide.title}</h3>
               <div className="flex gap-4">
                 {slide.stats.map((s, i) => (
                   <div
@@ -145,7 +140,7 @@ export const SlideStage: React.FC<SlideStageProps> = ({ slide, theme, index, tot
 
           {(slide.layout === 'bullets' || !['title', 'section', 'quote', 'comparison', 'stat'].includes(slide.layout)) && (
             <>
-              <h3 className={cn('text-2xl font-semibold mb-5 max-w-xl shrink-0', titleFont)}>{slide.title}</h3>
+              <h3 className={cn('text-2xl font-semibold mb-5 max-w-xl shrink-0 font-sans')}>{slide.title}</h3>
               <div
                 className="flex-1 rounded-2xl border flex flex-col justify-center gap-3.5 px-7 py-5 min-h-0"
                 style={{ background: t.cardBg, borderColor: t.cardBorder }}

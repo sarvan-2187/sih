@@ -14,7 +14,7 @@ import { motion } from 'framer-motion';
 import { FaUser, FaEnvelope, FaGraduationCap, FaCompass, FaChartLine } from 'react-icons/fa';
 import { isStaff } from '@/lib/roles';
 import { useSearchParams } from 'react-router-dom';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ExplorerTabPanel, ExplorerTabs } from '@/components/explorer';
 import { AnalyticsDashboard } from '@/features/analytics/components/AnalyticsDashboard';
 
 const OVERVIEW_TAB = 'overview';
@@ -143,29 +143,36 @@ export default function ProfilePage() {
 
         {/* Learners get Overview | Progress; staff have no analytics, so no tab strip. */}
         {!isEducator && (
-          <Tabs value={activeTab} onValueChange={selectTab} className="w-full">
-            <TabsList>
-              <TabsTrigger value={OVERVIEW_TAB}>
-                <FaUser className="mr-2 text-xs" aria-hidden />
-                Overview
-              </TabsTrigger>
-              <TabsTrigger value={PROGRESS_TAB}>
-                <FaChartLine className="mr-2 text-xs" aria-hidden />
-                Progress
-              </TabsTrigger>
-            </TabsList>
+          <ExplorerTabs
+            tabs={[
+              { value: OVERVIEW_TAB, label: 'Overview', icon: <FaUser className="text-xs" aria-hidden /> },
+              { value: PROGRESS_TAB, label: 'Progress', icon: <FaChartLine className="text-xs" aria-hidden /> },
+            ]}
+            value={activeTab}
+            onChange={selectTab}
+            label="Profile sections"
+            idPrefix="profile"
+          />
+        )}
 
-            {/* Radix unmounts the inactive tab, so the analytics request only fires
-                once the learner actually opens Progress. */}
-            <TabsContent value={PROGRESS_TAB} className="mt-8">
-              <AnalyticsDashboard />
-            </TabsContent>
-          </Tabs>
+        {/* Progress mounts only while selected, so the analytics request fires the first
+            time the learner opens it rather than on every profile visit. */}
+        {!isEducator && activeTab === PROGRESS_TAB && (
+          <ExplorerTabPanel idPrefix="profile" value={PROGRESS_TAB}>
+            <AnalyticsDashboard />
+          </ExplorerTabPanel>
         )}
 
         {/* Overview content: hidden rather than unmounted, so switching tabs does not
             refetch gamification or lose the badge-unlock modal. */}
-        <div className={cn("flex flex-col gap-12", activeTab !== OVERVIEW_TAB && "hidden")}>
+        <div
+          className={cn("flex flex-col gap-12", activeTab !== OVERVIEW_TAB && "hidden")}
+          {...(!isEducator && {
+            role: 'tabpanel',
+            id: `profile-panel-${OVERVIEW_TAB}`,
+            'aria-labelledby': `profile-tab-${OVERVIEW_TAB}`,
+          })}
+        >
 
         {/* Level XP Bar (Learners Only) */}
         {!isEducator && <XPBar xpSummary={xpSummary} loading={loading} />}

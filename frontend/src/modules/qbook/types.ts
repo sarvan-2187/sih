@@ -59,7 +59,8 @@ export interface DatasetDownloadUrlResponse {
   filename: string;
 }
 
-// --- QPilot — qBook's per-cell AI coding assistant ---
+// --- Qrious Code (formerly QPilot) — QBook's per-cell AI coding assistant. Type and API
+//     names keep the QPilot prefix; only user-facing text was renamed. ---
 
 export interface QPilotError {
   ename: string;

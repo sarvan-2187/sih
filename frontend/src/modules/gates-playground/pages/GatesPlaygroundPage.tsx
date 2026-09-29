@@ -10,6 +10,7 @@ import { ExecutionConsole } from '../components/ExecutionConsole';
 import { StatevectorTable } from '../components/StatevectorTable';
 import { GateTray } from '../components/GateTray';
 import { CircuitCopilotSidebar } from '../components/CircuitCopilotSidebar';
+import { useQriousCodeCircuit } from '@/features/qrious-code/QriousCode';
 import { SchrodingerLauncher } from '../components/SchrodingerLauncher';
 import { CatOverlay } from '../components/CatOverlay';
 import type { CircuitContext } from '../hooks/useAiTutorApi';
@@ -33,6 +34,11 @@ import { qasmToGates } from '../utils/qasmParser';
 import { SHORTCUTS, isEditableTarget } from '../utils/playgroundShortcuts';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { FaKeyboard } from 'react-icons/fa';
+
+// Legacy per-page Circuit Copilot launcher + Schrodinger's-cat animation. Superseded by the
+// app-wide Qrious Code panel (header button, see features/qrious-code). Switched off rather
+// than deleted so it can be restored after the demo: set this to true.
+const LEGACY_CIRCUIT_COPILOT_UI = false;
 
 const QISKIT_BOILERPLATE = `from qiskit import QuantumCircuit, QuantumRegister, ClassicalRegister
 from qiskit_aer import AerSimulator
@@ -578,6 +584,24 @@ const GatesPlaygroundPage: React.FC<GatesPlaygroundPageProps> = ({ initialQasm, 
     executionError: execResult.stderr || qasmError,
   };
 
+  // Applies AI-suggested OpenQASM back into the circuit (shared by Qrious Code).
+  const applyAiCode = (code: string) => {
+    isQasmEdit.current = true;
+    updateQasm(code);
+    try {
+      const parsed = qasmToGates(code);
+      setGates(parsed.gates);
+      if (parsed.numQubits !== qubits) setQubits(parsed.numQubits);
+      if (parsed.numCbits !== cbits) setCbits(parsed.numCbits);
+      setQasmError(null);
+    } catch (err) {
+      console.error('Failed to parse AI suggested QASM', err);
+    }
+  };
+
+  // Lets the global Qrious Code panel see this circuit and apply code into it.
+  useQriousCodeCircuit(currentCircuitContext, applyAiCode);
+
   return (
     <DndContext onDragEnd={handleDragEnd}>
       <div className={cn("flex flex-row w-full bg-qp-bg text-qp-text font-sans", isEmbedded ? "h-auto overflow-visible" : "h-[calc(100vh-3.5rem)] overflow-hidden")}>
@@ -863,6 +887,9 @@ const GatesPlaygroundPage: React.FC<GatesPlaygroundPageProps> = ({ initialQasm, 
           )}
         </div>
 
+        {/* Legacy Circuit Copilot UI, now served app-wide by Qrious Code. Restore: LEGACY_CIRCUIT_COPILOT_UI = true. */}
+        {LEGACY_CIRCUIT_COPILOT_UI && (
+        <>
         {/* Floating Action Button for AI Copilot */}
         <div className="fixed bottom-10 right-10 z-50">
           <SchrodingerLauncher anchorRef={launcherRef} onClick={toggleAiTutor} isOpen={aiTutorOpen} />
@@ -877,19 +904,7 @@ const GatesPlaygroundPage: React.FC<GatesPlaygroundPageProps> = ({ initialQasm, 
           isOpen={aiTutorOpen}
           onClose={closeAiTutor}
           circuitContext={currentCircuitContext}
-          onApplyCode={(code) => {
-            isQasmEdit.current = true;
-            updateQasm(code);
-            try {
-              const parsed = qasmToGates(code);
-              setGates(parsed.gates);
-              if (parsed.numQubits !== qubits) setQubits(parsed.numQubits);
-              if (parsed.numCbits !== cbits) setCbits(parsed.numCbits);
-              setQasmError(null);
-            } catch (err) {
-              console.error('Failed to parse AI suggested QASM', err);
-            }
-          }}
+          onApplyCode={applyAiCode}
           isCatInCopilot={isCatInCopilot}
           copilotWidth={copilotWidth}
           setCopilotWidth={setCopilotWidth}
@@ -904,6 +919,8 @@ const GatesPlaygroundPage: React.FC<GatesPlaygroundPageProps> = ({ initialQasm, 
           isCatInCopilot={isCatInCopilot}
           onCatArrived={() => setIsCatInCopilot(true)}
         />
+        </>
+        )}
       </div>
     </DndContext>
   );

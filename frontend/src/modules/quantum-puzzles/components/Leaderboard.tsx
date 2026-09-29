@@ -1,9 +1,11 @@
-import React, { useState, useEffect } from 'react';
-import { useTheme } from '@/context/ThemeContext';
-import { cn } from '@/lib/utils';
-import { FaFire, FaUser, FaTrophy } from 'react-icons/fa';
+import React, { useEffect, useState } from 'react';
+import { FaTrophy } from 'react-icons/fa';
+
 import { apiClient } from '@/lib/apiClient';
-import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
+import { ExplorerPanel, IconBadge, Pill, tone } from '@/components/explorer';
 
 interface LeaderboardUser {
   rank: number;
@@ -14,202 +16,214 @@ interface LeaderboardUser {
   combined_score: number;
 }
 
+// Rows after the podium that are shown before "Show more", and how many each click adds.
+const LIST_PAGE = 7;
+const PODIUM_SIZE = 3;
+
+function initials(name: string): string {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  const first = parts[0][0] ?? '';
+  const last = parts.length > 1 ? parts[parts.length - 1][0] ?? '' : '';
+  return (first + last).toUpperCase();
+}
+
+function formatScore(score: number): string {
+  return score.toLocaleString();
+}
+
+/**
+ * Dashboard leaderboard. The endpoint returns every learner already ranked by score
+ * (XP + 50 per daily puzzle solved), so the learner's own row can always be found and
+ * pinned, and "points to the next rank" is a real gap, not an estimate.
+ */
 export const Leaderboard: React.FC = () => {
   const { theme } = useTheme();
-  const [users, setUsers] = useState<LeaderboardUser[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { currentUser } = useAuth();
+  // undefined = loading; null = hidden (educators have no ranking)
+  const [users, setUsers] = useState<LeaderboardUser[] | null | undefined>(undefined);
   const [error, setError] = useState<string | null>(null);
-  const [isEducator, setIsEducator] = useState(false);
-  const [displayLimit, setDisplayLimit] = useState(4);
+  const [listLimit, setListLimit] = useState(LIST_PAGE);
 
   useEffect(() => {
-    async function fetchLeaderboard() {
-      try {
-        const response = await apiClient.get<{ data: LeaderboardUser[]; meta?: { is_educator?: boolean } }>('/api/v1/learning/puzzles/leaderboard');
+    let alive = true;
+    apiClient
+      .get<{ data: LeaderboardUser[]; meta?: { is_educator?: boolean } }>('/api/v1/learning/puzzles/leaderboard')
+      .then((response) => {
+        if (!alive) return;
         if (response.data?.meta?.is_educator) {
-          setIsEducator(true);
+          setUsers(null);
           return;
         }
-        if (response.data && Array.isArray(response.data.data)) {
-          setUsers(response.data.data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch leaderboard", err);
-        setError("Could not load rankings");
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchLeaderboard();
+        setUsers(Array.isArray(response.data?.data) ? response.data.data : []);
+      })
+      .catch(() => {
+        if (!alive) return;
+        setError('Could not load the rankings. Refresh to try again.');
+        setUsers([]);
+      });
+    return () => {
+      alive = false;
+    };
   }, []);
 
-  if (isEducator) {
-    return null;
-  }
+  if (users === null) return null;
 
-  if (loading) {
-    return (
-      <div className={cn(
-        "p-8 rounded-[2rem] border shadow-md hover:shadow-lg transition-all duration-300 font-sans flex flex-col gap-6 relative hover:scale-[1.01] h-full min-h-[365px]",
-        theme === 'dark'
-          ? "bg-zinc-950/50 border-white/10 hover:border-white/20 hover:bg-zinc-900/30"
-          : "bg-white border-zinc-200 hover:border-zinc-300"
-      )}>
-        <div className={cn(
-          "pb-4 border-b flex items-center justify-between gap-4",
-          theme === 'dark' ? "border-white/10" : "border-zinc-200"
-        )}>
-          <div className="flex items-center gap-3">
-            <div>
-              <h3 className="text-xl font-medium tracking-tight text-foreground flex items-center gap-2">Leaderboard</h3>
-              <p className={cn("text-xs mt-0.5", theme === 'dark' ? "text-zinc-400" : "text-zinc-500")}>
-                Top learners ranked by XP & daily solves
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 flex flex-col justify-center items-center gap-2">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
-          <p className="text-xs text-muted-foreground font-mono">Loading Leaderboard...</p>
-        </div>
+  const rule = theme === 'dark' ? 'border-white/10' : 'border-zinc-200';
+  const podium = (users ?? []).slice(0, PODIUM_SIZE);
+  const rest = (users ?? []).slice(PODIUM_SIZE);
+  const shown = rest.slice(0, listLimit);
+  const me = (users ?? []).find((user) => user.firebase_uid === currentUser?.uid);
+  const meIsVisible = me !== undefined && me.rank <= PODIUM_SIZE + shown.length;
+  const ahead = me && me.rank > 1 ? users?.[me.rank - 2] : undefined;
+  const gap = me && ahead ? Math.max(1, ahead.combined_score - me.combined_score + 1) : 0;
+
+  const header = (
+    <div className="flex items-center gap-3">
+      <IconBadge size="sm">
+        <FaTrophy className="h-4 w-4" aria-hidden />
+      </IconBadge>
+      <div>
+        <h2 className="text-lg font-medium">Leaderboard</h2>
+        <p className={cn('text-xs', tone.muted(theme))}>Score is your XP plus 50 per daily puzzle solved.</p>
       </div>
-    );
-  }
-
-  if (error || users.length === 0) {
-    return (
-      <div className={cn(
-        "p-8 rounded-[2rem] border shadow-md hover:shadow-lg transition-all duration-300 font-sans flex flex-col gap-6 relative hover:scale-[1.01] h-full min-h-[365px]",
-        theme === 'dark'
-          ? "bg-zinc-950/50 border-white/10 hover:border-white/20 hover:bg-zinc-900/30"
-          : "bg-white border-zinc-200 hover:border-zinc-300"
-      )}>
-        <div className={cn(
-          "pb-4 border-b flex items-center justify-between gap-4",
-          theme === 'dark' ? "border-white/10" : "border-zinc-200"
-        )}>
-          <div className="flex items-center gap-3">
-            <div>
-              <h3 className="text-xl font-medium tracking-tight text-foreground flex items-center gap-2">Leaderboard</h3>
-              <p className={cn("text-xs mt-0.5", theme === 'dark' ? "text-zinc-400" : "text-zinc-500")}>
-                Top learners ranked by XP & daily solves
-              </p>
-            </div>
-          </div>
-        </div>
-        <div className="flex-1 flex flex-col justify-center items-center text-center">
-          <FaTrophy className="w-10 h-10 text-zinc-600 mb-2" />
-          <p className="text-sm font-medium">No rankings yet</p>
-          <p className="text-xs text-muted-foreground mt-1 max-w-[200px]">Be the first to complete a daily challenge!</p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className={cn(
-      "p-8 rounded-[2rem] border shadow-md hover:shadow-lg transition-all duration-300 font-sans flex flex-col gap-6 relative hover:scale-[1.01] h-full lg:min-h-[365px]",
-      theme === 'dark'
-        ? "bg-zinc-950/50 border-white/10 hover:border-white/20 hover:bg-zinc-900/30"
-        : "bg-white border-zinc-200 hover:border-zinc-300"
-    )}>
-      <div className={cn(
-        "pb-4 border-b flex items-center justify-between gap-4",
-        theme === 'dark' ? "border-white/10" : "border-zinc-200"
-      )}>
-        <div className="flex items-center gap-3">
-          <div>
-            <h3 className="text-xl font-medium tracking-tight text-foreground flex items-center gap-2">Leaderboard</h3>
-            <p className={cn("text-xs mt-0.5", theme === 'dark' ? "text-zinc-400" : "text-zinc-500")}>
-              Top learners ranked by XP & daily solves
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-3 max-h-[340px] overflow-y-auto pr-1 custom-scrollbar">
-        {users.slice(0, displayLimit).map((user, idx) => {
-          const rankColors = 
-            user.rank === 1 ? "text-yellow-400" :
-            user.rank === 2 ? "text-zinc-300" :
-            user.rank === 3 ? "text-amber-600" : "text-zinc-500";
-
-          return (
-            <motion.div
-              key={user.firebase_uid}
-              className={cn(
-                "flex items-center justify-between p-3.5 rounded-xl border transition-all duration-300",
-                theme === 'dark' 
-                  ? "bg-zinc-900/40 border-white/5 hover:border-emerald-500/20" 
-                  : "bg-zinc-50/50 border-zinc-100 hover:border-emerald-500/10"
-              )}
-              initial={{ opacity: 0, x: 10 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.3, delay: Math.min(idx * 0.05, 0.4) }}
-            >
-              {/* Left side: Rank and Name */}
-              <div className="flex items-center gap-3 min-w-0 flex-1">
-                <div className="w-7 flex justify-center items-center shrink-0">
-                  <span className={cn("font-mono text-xs font-medium", rankColors)}>
-                    #{user.rank}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2 min-w-0 flex-1">
-                  <div className={cn(
-                    "w-7 h-7 rounded-full flex items-center justify-center text-xs border shrink-0",
-                    theme === 'dark' ? "bg-zinc-800/80 border-white/5 text-zinc-300" : "bg-zinc-100 border-zinc-200 text-zinc-600"
-                  )}>
-                    <FaUser className="w-3 h-3" />
-                  </div>
-                  <span className="text-xs font-sans font-medium tracking-tight truncate block">
-                    {user.display_name}
-                  </span>
-                </div>
-              </div>
-
-              {/* Right side: XP, Solves, Score */}
-              <div className="flex items-center gap-4 shrink-0 pl-3">
-                <div className="flex flex-col items-end gap-0.5">
-                  <span className="text-[10px] font-mono font-medium text-emerald-500">
-                    {user.xp_total} XP
-                  </span>
-                  <span className="text-[9px] font-mono text-orange-500 flex items-center gap-0.5">
-                    <FaFire className="w-2.5 h-2.5 shrink-0" /> {user.daily_solves_count} solves
-                  </span>
-                </div>
-                
-                {/* Combined Score Indicator */}
-                <div className={cn(
-                  "px-2.5 py-1 rounded-lg border font-mono text-xs font-medium shadow-sm min-w-[45px] text-center",
-                  theme === 'dark' ? "bg-zinc-900 border-white/10 text-white" : "bg-zinc-100 border-zinc-200 text-zinc-900"
-                )}>
-                  {user.combined_score}
-                </div>
-              </div>
-            </motion.div>
-          );
-        })}
-      </div>
-
-      {users.length > 4 && (
-        <div className="flex justify-center items-center pt-2.5 border-t border-zinc-200/50 dark:border-white/5 shrink-0 mt-auto">
-          {displayLimit < users.length ? (
-            <button
-              onClick={() => setDisplayLimit(prev => Math.min(prev + 4, users.length))}
-              className="text-xs text-emerald-500 hover:text-emerald-400 font-medium transition-colors focus:outline-none"
-            >
-              Show More
-            </button>
-          ) : (
-            <button
-              onClick={() => setDisplayLimit(4)}
-              className="text-xs text-emerald-500 hover:text-emerald-400 font-medium transition-colors focus:outline-none"
-            >
-              Show Less
-            </button>
-          )}
-        </div>
-      )}
     </div>
   );
+
+  if (users === undefined || error || users.length === 0) {
+    return (
+      <ExplorerPanel className="flex flex-col gap-5">
+        {header}
+        {users === undefined ? (
+          <div className={cn('h-40 animate-pulse rounded-xl', tone.skeleton(theme))} aria-label="Loading the leaderboard" />
+        ) : error ? (
+          <p className="text-sm text-red-500">{error}</p>
+        ) : (
+          <p className={cn('text-sm', tone.secondary(theme))}>
+            No rankings yet. Solve today's puzzle to take the first spot.
+          </p>
+        )}
+      </ExplorerPanel>
+    );
+  }
+
+  // Wide layout: the podium and your standing on the left, the ranked list on the right.
+  return (
+    <ExplorerPanel className="grid gap-8 lg:grid-cols-[minmax(0,2fr)_minmax(0,3fr)]">
+      <div className="flex flex-col gap-6">
+        {header}
+        <Podium entries={podium} currentUid={currentUser?.uid} />
+        {me && (
+          <p className={cn('text-sm', tone.secondary(theme))}>
+            {me.rank === 1
+              ? "You're in first place."
+              : `You're #${me.rank}. ${formatScore(gap)} pts to pass #${me.rank - 1}${ahead ? ` (${ahead.display_name})` : ''}.`}
+          </p>
+        )}
+      </div>
+
+      <div className={cn('flex flex-col gap-3 lg:border-l lg:pl-8', rule)}>
+        {shown.length > 0 ? (
+          <ol className={cn('flex flex-col divide-y', theme === 'dark' ? 'divide-white/10' : 'divide-zinc-200')}>
+            {shown.map((user) => (
+              <RankRow key={user.firebase_uid} user={user} isMe={user.firebase_uid === currentUser?.uid} />
+            ))}
+          </ol>
+        ) : (
+          <p className={cn('text-sm', tone.secondary(theme))}>Only the top three have scores so far.</p>
+        )}
+
+        {me && !meIsVisible && (
+          <ol className={cn('border-t pt-1', rule)} aria-label="Your position">
+            <RankRow user={me} isMe />
+          </ol>
+        )}
+
+        {rest.length > listLimit && (
+          <button
+            type="button"
+            onClick={() => setListLimit((limit) => limit + LIST_PAGE)}
+            className={cn('self-start text-sm font-medium transition-colors hover:text-emerald-500', tone.secondary(theme))}
+          >
+            Show more
+          </button>
+        )}
+      </div>
+    </ExplorerPanel>
+  );
 };
+
+/** Top three as a podium, ordered 2 · 1 · 3 like a real one; step height marks the place. */
+function Podium({ entries, currentUid }: { entries: LeaderboardUser[]; currentUid?: string }) {
+  const { theme } = useTheme();
+  const order = [entries[1], entries[0], entries[2]].filter(Boolean) as LeaderboardUser[];
+  const stepHeight: Record<number, string> = { 1: 'h-16', 2: 'h-11', 3: 'h-8' };
+
+  return (
+    <ol className="grid grid-cols-3 items-end gap-2" aria-label="Top three">
+      {order.map((user) => {
+        const isMe = user.firebase_uid === currentUid;
+        const first = user.rank === 1;
+        return (
+          <li key={user.firebase_uid} className="flex min-w-0 flex-col items-center gap-1.5 text-center">
+            <span
+              className={cn(
+                'flex h-10 w-10 items-center justify-center rounded-full border text-sm font-medium',
+                first ? 'border-emerald-500 text-emerald-500' : tone.badge(theme),
+                isMe && 'ring-2 ring-emerald-500 ring-offset-2',
+                isMe && (theme === 'dark' ? 'ring-offset-zinc-950' : 'ring-offset-white'),
+              )}
+              aria-hidden
+            >
+              {initials(user.display_name)}
+            </span>
+            <span className="line-clamp-2 w-full text-xs font-medium leading-tight" title={user.display_name}>
+              {user.display_name}
+              {isMe && <span className="text-emerald-500"> (you)</span>}
+            </span>
+            <span className={cn('text-xs tabular-nums', tone.secondary(theme))}>
+              {formatScore(user.combined_score)} pts
+            </span>
+            <span
+              className={cn(
+                'flex w-full items-start justify-center rounded-t-lg pt-1 text-sm font-semibold tabular-nums',
+                stepHeight[user.rank],
+                first
+                  ? 'bg-emerald-500/15 text-emerald-500'
+                  : theme === 'dark'
+                    ? 'bg-white/5 text-zinc-400'
+                    : 'bg-zinc-100 text-zinc-500',
+              )}
+              aria-label={`Rank ${user.rank}`}
+            >
+              {user.rank}
+            </span>
+          </li>
+        );
+      })}
+    </ol>
+  );
+}
+
+function RankRow({ user, isMe }: { user: LeaderboardUser; isMe: boolean }) {
+  const { theme } = useTheme();
+  return (
+    <li className={cn('flex items-center gap-3 py-2.5', isMe && '-mx-2 rounded-lg bg-emerald-500/10 px-2')}>
+      <span className={cn('w-8 shrink-0 text-sm tabular-nums', tone.muted(theme))}>#{user.rank}</span>
+      <span
+        className={cn(
+          'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-[11px] font-medium',
+          tone.badge(theme),
+        )}
+        aria-hidden
+      >
+        {initials(user.display_name)}
+      </span>
+      <span className="min-w-0 flex-1 truncate text-sm" title={user.display_name}>
+        {user.display_name}
+      </span>
+      {isMe && <Pill variant="accent">You</Pill>}
+      <span className="shrink-0 text-sm tabular-nums">{formatScore(user.combined_score)}</span>
+    </li>
+  );
+}

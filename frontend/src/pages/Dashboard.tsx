@@ -98,7 +98,11 @@ export default function Dashboard() {
               <QplannerTodayCard />
               {/* Q-Rating: current rating plus the countdown to the next round */}
               <QRatingDashboardCard />
-              {/* Leaderboard Column */}
+            </div>
+          )}
+          {/* Full-width row: a leaderboard needs the width for its podium and list side by side */}
+          {!isStaff(userData?.role) && (
+            <div className="lg:col-span-3">
               <Leaderboard />
             </div>
           )}

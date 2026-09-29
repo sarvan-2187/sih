@@ -31,7 +31,7 @@ export function QBookLocalOnlyNotice() {
           <FaBook className="w-5 h-5" />
         </div>
         <div>
-          <h2 className="text-2xl font-sans tracking-tight">qBook</h2>
+          <h2 className="text-2xl font-sans tracking-tight">QBook</h2>
           <p className={cn("text-sm mt-1", theme === 'dark' ? "text-zinc-400" : "text-zinc-600")}>
             Run Python and Qiskit notebooks, cell by cell.
           </p>
@@ -47,7 +47,7 @@ export function QBookLocalOnlyNotice() {
         </div>
         <h3 className="text-lg font-semibold">Local-only feature (MVP)</h3>
         <p className={cn("max-w-md", theme === 'dark' ? "text-zinc-400" : "text-zinc-600")}>
-          qBook's notebook execution service isn't deployed to any cloud host yet — only
+          QBook's notebook execution service isn't deployed to any cloud host yet — only
           demoed via Docker on a developer's own machine. It isn't available on this
           deployed site.
         </p>

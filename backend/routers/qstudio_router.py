@@ -9,6 +9,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from pypdf import PdfReader
 
 from ai import ai_gateway, AITask, ChatMessage
+from ai.exceptions import AIGatewayError
 from auth import get_current_user
 from database import get_db
 from models.lms import serialize
@@ -640,6 +641,16 @@ async def create_output(
             voice = request.params.get("voice")
             theme = request.params.get("theme", "minimal_dark")
             background_tasks.add_task(_trigger_animation_overview, str(output_id), grounding_text, voice, theme)
+    except AIGatewayError as e:
+        # Every provider failed -- in practice free-tier rate limits. The per-provider list
+        # ("groq:AIRateLimitError, gemini:...") belongs in the server log, not on a
+        # learner's screen, where it was being shown verbatim.
+        print(f"[QStudio] {request.type} generation failed on every provider: {e.attempts}", flush=True)
+        updated_fields = {
+            "status": "failed",
+            "error": "The AI models are busy right now. Wait about a minute, then click Regenerate.",
+            "updated_at": datetime.now(timezone.utc),
+        }
     except Exception as e:
         updated_fields = {"status": "failed", "error": str(e), "updated_at": datetime.now(timezone.utc)}
 

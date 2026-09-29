@@ -190,7 +190,7 @@ export const NotebookCell: React.FC<NotebookCellProps> = ({
         )}>
           {cell.cell_type === 'code' && (
             <button onClick={() => setQpilotOpen((prev) => !prev)} className="hover:text-emerald-500 flex items-center gap-1">
-              <Sparkles className="w-3 h-3" /> Ask QPilot
+              <Sparkles className="w-3 h-3" /> Ask Qrious Code
             </button>
           )}
           <button onClick={onMoveUp} className="hover:text-emerald-500 flex items-center gap-1">

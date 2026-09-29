@@ -87,6 +87,11 @@ class OpenAICompatibleProvider:
             return AIUnavailableError(str(exc), self._name)
         return AIUnavailableError(f"unmapped error: {exc}", self._name)
 
+    def _tool_parameters(self, response_model) -> dict:
+        """JSON Schema sent as the structured-output tool's parameters. Overridden by
+        providers whose endpoint rejects parts of Pydantic's schema output (Gemini)."""
+        return response_model.model_json_schema()
+
     async def chat(
         self,
         messages: list[ChatMessage],
@@ -111,7 +116,7 @@ class OpenAICompatibleProvider:
                 "function": {
                     "name": _STRUCTURED_OUTPUT_TOOL_NAME,
                     "description": f"Emit the result as {response_model.__name__}.",
-                    "parameters": response_model.model_json_schema(),
+                    "parameters": self._tool_parameters(response_model),
                 },
             }
             kwargs["tools"] = [tool_schema]

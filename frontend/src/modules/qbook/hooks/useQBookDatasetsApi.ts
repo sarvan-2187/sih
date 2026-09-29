@@ -6,7 +6,7 @@ import type {
   DatasetUploadUrlResponse,
 } from '../types';
 
-/** CRUD + upload/download for qBook's "My Datasets" — mirrors useQBookApi.ts's
+/** CRUD + upload/download for QBook's "My Datasets" — mirrors useQBookApi.ts's
  * loading/error wrapper. The actual file bytes never pass through backend/: the
  * browser PUTs straight to the presigned B2 URL on upload, and GETs straight from
  * it on load (see PLANS/qbook-qml.md §0 for why notebook_service never touches B2

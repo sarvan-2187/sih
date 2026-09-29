@@ -20,6 +20,12 @@ import { toast } from "sonner";
 import { useTheme } from "@/context/ThemeContext";
 import { cn } from "@/lib/utils";
 import { useNavigate } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+import type { Components } from "react-markdown";
+import remarkMath from "remark-math";
+import remarkGfm from "remark-gfm";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 interface NoteEditorProps {
   note: Note;
@@ -30,38 +36,84 @@ interface NoteEditorProps {
 }
 
 // ---------------------------------------------------------------------------
-// Inline markdown: **bold**, *italic*, `code`
+// Markdown preview
+//
+// This used to be a hand-rolled line parser that understood headings, bullets and
+// code fences but not LaTeX, so $...$ and $$...$$ showed up as raw text. It now uses
+// the same react-markdown + remark-math + rehype-katex stack as TheoryPanel, with each
+// element mapped to the classes the old renderer used, so the preview looks the same
+// but renders maths (plus links, images, numbered lists and tables it never handled).
 // ---------------------------------------------------------------------------
-function renderInline(text: string, keyBase: string | number): React.ReactNode {
-  const parts: React.ReactNode[] = [];
-  const re = /(\*\*(.+?)\*\*|\*(.+?)\*|`(.+?)`)/g;
-  let last = 0;
-  let m: RegExpExecArray | null;
-  while ((m = re.exec(text)) !== null) {
-    if (m.index > last) parts.push(text.slice(last, m.index));
-    if (m[0].startsWith("**")) {
-      parts.push(<strong key={`${keyBase}-b${m.index}`}>{m[2]}</strong>);
-    } else if (m[0].startsWith("*")) {
-      parts.push(<em key={`${keyBase}-i${m.index}`}>{m[3]}</em>);
-    } else {
-      parts.push(
-        <code
-          key={`${keyBase}-c${m.index}`}
-          className="px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-mono text-[0.82em]"
-        >
-          {m[4]}
-        </code>
+function markdownComponents(theme: string): Components {
+  const dark = theme === "dark";
+  return {
+    h1: ({ children }) => (
+      <h1 className={cn("text-2xl font-medium tracking-tight mt-6 mb-2", dark ? "text-white" : "text-zinc-900")}>
+        {children}
+      </h1>
+    ),
+    h2: ({ children }) => (
+      <h2 className={cn("text-xl font-medium tracking-tight mt-5 mb-1", dark ? "text-white" : "text-zinc-900")}>
+        {children}
+      </h2>
+    ),
+    h3: ({ children }) => (
+      <h3 className={cn("text-base font-medium tracking-tight mt-4 mb-1", dark ? "text-zinc-100" : "text-zinc-800")}>
+        {children}
+      </h3>
+    ),
+    p: ({ children }) => <p className="leading-relaxed my-2">{children}</p>,
+    ul: ({ children }) => <ul className="space-y-1 my-2 ml-5 list-disc">{children}</ul>,
+    ol: ({ children }) => <ol className="space-y-1 my-2 ml-5 list-decimal">{children}</ol>,
+    hr: () => <hr className={cn("my-4 border-t", dark ? "border-white/10" : "border-zinc-200")} />,
+    a: ({ href, children }) => (
+      <a href={href} target="_blank" rel="noopener noreferrer" className="text-emerald-500 underline underline-offset-2">
+        {children}
+      </a>
+    ),
+    img: ({ src, alt }) => <img src={src} alt={alt ?? ""} className="my-3 rounded-lg max-w-full" />,
+    table: ({ children }) => (
+      <div className="my-3 overflow-x-auto">
+        <table className="w-full text-left text-xs border-collapse">{children}</table>
+      </div>
+    ),
+    th: ({ children }) => (
+      <th className={cn("border px-2 py-1 font-medium", dark ? "border-white/10" : "border-zinc-200")}>{children}</th>
+    ),
+    td: ({ children }) => (
+      <td className={cn("border px-2 py-1", dark ? "border-white/10" : "border-zinc-200")}>{children}</td>
+    ),
+    // Inline code; fenced blocks are styled by `pre` below, which resets these classes.
+    code: ({ className, children }) => (
+      <code className={cn("px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-500 font-mono text-[0.82em]", className)}>
+        {children}
+      </code>
+    ),
+    pre: ({ children }) => {
+      const lang = React.isValidElement<{ className?: string }>(children)
+        ? /language-([\w-]+)/.exec(children.props.className ?? "")?.[1]
+        : undefined;
+      return (
+        <div className={cn("my-3 rounded-xl border overflow-hidden", dark ? "border-white/10 bg-zinc-950" : "border-zinc-200 bg-white")}>
+          {lang && (
+            <div
+              className={cn(
+                "px-4 py-1 text-[10px] font-mono uppercase tracking-widest border-b",
+                dark ? "text-emerald-400 border-white/10 bg-black" : "text-emerald-600 border-zinc-200 bg-zinc-50"
+              )}
+            >
+              {lang}
+            </div>
+          )}
+          <pre className="px-4 py-3 font-mono text-xs overflow-x-auto leading-relaxed text-emerald-500 [&_code]:bg-transparent [&_code]:p-0 [&_code]:text-[1em]">
+            {children}
+          </pre>
+        </div>
       );
-    }
-    last = m.index + m[0].length;
-  }
-  if (last < text.length) parts.push(text.slice(last));
-  return <>{parts}</>;
+    },
+  };
 }
 
-// ---------------------------------------------------------------------------
-// Block markdown renderer (multi-line state machine)
-// ---------------------------------------------------------------------------
 function renderMarkdown(raw: string, theme: string): React.ReactNode {
   if (!raw.trim()) {
     return (
@@ -71,149 +123,22 @@ function renderMarkdown(raw: string, theme: string): React.ReactNode {
     );
   }
 
-  const lines = raw.split("\n");
-  const nodes: React.ReactNode[] = [];
-  let i = 0;
-
-  while (i < lines.length) {
-    const line = lines[i];
-
-    // Fenced code block
-    if (line.trimStart().startsWith("```")) {
-      const lang = line.trim().slice(3).trim();
-      const codeLines: string[] = [];
-      i++;
-      while (i < lines.length && !lines[i].trimStart().startsWith("```")) {
-        codeLines.push(lines[i]);
-        i++;
-      }
-      i++; // consume closing ```
-      nodes.push(
-        <div
-          key={`cb${i}`}
-          className={cn(
-            "my-3 rounded-xl border overflow-hidden",
-            theme === "dark" ? "border-white/10 bg-zinc-950" : "border-zinc-200 bg-white"
-          )}
-        >
-          {lang && (
-            <div
-              className={cn(
-                "px-4 py-1 text-[10px] font-mono uppercase tracking-widest border-b",
-                theme === "dark"
-                  ? "text-emerald-400 border-white/10 bg-black"
-                  : "text-emerald-600 border-zinc-200 bg-zinc-50"
-              )}
-            >
-              {lang}
-            </div>
-          )}
-          <pre className="px-4 py-3 font-mono text-xs overflow-x-auto leading-relaxed text-emerald-500">
-            {codeLines.join("\n")}
-          </pre>
-        </div>
-      );
-      continue;
-    }
-
-    // Bullet list block
-    if (line.startsWith("- ") || line.startsWith("* ")) {
-      const items: React.ReactNode[] = [];
-      while (i < lines.length && (lines[i].startsWith("- ") || lines[i].startsWith("* "))) {
-        const content = lines[i].slice(2);
-        items.push(
-          <li key={`li${i}`} className="ml-5 list-disc">
-            {renderInline(content, `li${i}`)}
-          </li>
-        );
-        i++;
-      }
-      nodes.push(
-        <ul key={`ul${i}`} className="space-y-1 my-2">
-          {items}
-        </ul>
-      );
-      continue;
-    }
-
-    // Headings
-    if (line.startsWith("### ")) {
-      nodes.push(
-        <h3
-          key={`h3${i}`}
-          className={cn(
-            "text-base font-medium tracking-tight mt-4 mb-1",
-            theme === "dark" ? "text-zinc-100" : "text-zinc-800"
-          )}
-        >
-          {renderInline(line.slice(4), `h3${i}`)}
-        </h3>
-      );
-      i++; continue;
-    }
-    if (line.startsWith("## ")) {
-      nodes.push(
-        <h2
-          key={`h2${i}`}
-          className={cn(
-            "text-xl font-medium tracking-tight mt-5 mb-1",
-            theme === "dark" ? "text-white" : "text-zinc-900"
-          )}
-        >
-          {renderInline(line.slice(3), `h2${i}`)}
-        </h2>
-      );
-      i++; continue;
-    }
-    if (line.startsWith("# ")) {
-      nodes.push(
-        <h1
-          key={`h1${i}`}
-          className={cn(
-            "text-2xl font-medium tracking-tight mt-6 mb-2",
-            theme === "dark" ? "text-white" : "text-zinc-900"
-          )}
-        >
-          {renderInline(line.slice(2), `h1${i}`)}
-        </h1>
-      );
-      i++; continue;
-    }
-
-    // Horizontal rule
-    if (/^[-*_]{3,}$/.test(line.trim())) {
-      nodes.push(
-        <hr
-          key={`hr${i}`}
-          className={cn("my-4 border-t", theme === "dark" ? "border-white/10" : "border-zinc-200")}
-        />
-      );
-      i++; continue;
-    }
-
-    // Blank line
-    if (!line.trim()) {
-      nodes.push(<div key={`sp${i}`} className="h-2" />);
-      i++; continue;
-    }
-
-    // Paragraph
-    nodes.push(
-      <p key={`p${i}`} className="leading-relaxed">
-        {renderInline(line, `p${i}`)}
-      </p>
-    );
-    i++;
-  }
-
   return (
     <div
       className={cn(
-        "space-y-1 font-sans text-sm leading-relaxed",
+        "font-sans text-sm leading-relaxed",
+        // wide display equations scroll sideways instead of overflowing the card
+        "[&_.katex-display]:my-3 [&_.katex-display]:overflow-x-auto [&_.katex-display]:overflow-y-hidden",
         theme === "dark" ? "text-zinc-300" : "text-zinc-700"
       )}
     >
-      {nodes}
+      <ReactMarkdown
+        remarkPlugins={[remarkMath, remarkGfm]}
+        rehypePlugins={[rehypeKatex]}
+        components={markdownComponents(theme)}
+      >
+        {raw}
+      </ReactMarkdown>
     </div>
   );
 }

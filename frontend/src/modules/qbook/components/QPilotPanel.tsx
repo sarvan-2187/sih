@@ -40,7 +40,7 @@ export const QPilotPanel: React.FC<QPilotPanelProps> = ({ error, onAsk, onApply,
     try {
       setResult(await onAsk(trimmed));
     } catch (err: any) {
-      setAskError(err.response?.data?.detail || err.message || 'QPilot failed to respond.');
+      setAskError(err.response?.data?.detail || err.message || 'Qrious Code failed to respond.');
     } finally {
       setAsking(false);
     }
@@ -58,7 +58,7 @@ export const QPilotPanel: React.FC<QPilotPanelProps> = ({ error, onAsk, onApply,
     )}>
       <div className="flex items-center justify-between">
         <div className={cn("flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider", theme === 'dark' ? "text-emerald-400" : "text-emerald-600")}>
-          <Sparkles className="w-3.5 h-3.5" /> QPilot
+          <Sparkles className="w-3.5 h-3.5" /> Qrious Code
         </div>
         <button
           onClick={onClose}
@@ -104,7 +104,7 @@ export const QPilotPanel: React.FC<QPilotPanelProps> = ({ error, onAsk, onApply,
           value={instruction}
           onChange={(e) => setInstruction(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAsk(); } }}
-          placeholder="Ask QPilot about this code…"
+          placeholder="Ask Qrious Code about this code…"
           disabled={asking}
           className={cn(
             "flex-1 rounded-lg border px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500/40 disabled:opacity-50",

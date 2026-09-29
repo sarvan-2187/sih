@@ -64,7 +64,7 @@ export const ComponentConfigPanel: React.FC<ComponentConfigPanelProps> = ({ spec
           <h3 className="text-xs text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-2 font-semibold flex items-center gap-2">
             <span>📚</span> From the Source
           </h3>
-          <p className={cn("text-xs italic font-serif leading-relaxed", isDark ? "text-zinc-400" : "text-zinc-600")}>"{spec.specSource}"</p>
+          <p className={cn("text-xs italic font-sans leading-relaxed", isDark ? "text-zinc-400" : "text-zinc-600")}>"{spec.specSource}"</p>
         </div>
       </div>
     </div>

@@ -25,21 +25,6 @@ export default function HeroSection() {
         <NoiseOverlay />
       </div>
 
-      {/* Massive Background Text */}
-      <div className="absolute inset-0 z-20 flex items-center justify-center overflow-hidden pointer-events-none">
-        <span
-          className="text-white font-sans tracking-tighter select-none"
-          style={{
-            fontSize: '22vw',
-            opacity: 0.03,
-            filter: 'blur(8px)',
-            lineHeight: 1
-          }}
-        >
-          SUPERPOSITION
-        </span>
-      </div>
-
       {/* Content Container */}
       <div className="relative z-30 w-full max-w-[1600px] mx-auto px-6 md:px-16 flex flex-col lg:flex-row items-center justify-between gap-12">
 

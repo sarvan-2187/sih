@@ -93,7 +93,10 @@ def load_provider_configs() -> dict[str, ProviderConfig]:
         ),
         "nvidia": _provider_config(
             "nvidia", "NVIDIA_API_KEY", "https://integrate.api.nvidia.com/v1",
-            "NVIDIA_MODEL", "meta/llama-3.3-70b-instruct",
+            # meta/llama-3.3-70b-instruct was decommissioned (410 Gone, EOL 2026-08-26).
+            # Nemotron 3 Super is NVIDIA's current generation and is in their live catalog;
+            # not yet call-tested here, since the NVIDIA key in use returns 403 on every model.
+            "NVIDIA_MODEL", "nvidia/nemotron-3-super-120b-a12b",
         ),
         "kimi": _provider_config(
             "kimi", "KIMI_API_KEY", "https://api.moonshot.ai/v1",

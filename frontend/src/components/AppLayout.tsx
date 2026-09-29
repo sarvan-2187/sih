@@ -14,6 +14,7 @@ import { DailyXpModal } from '@/features/gamification/components/DailyXpModal';
 import { PomodoroFAB } from '@/features/focus/components/PomodoroFAB';
 import { usePomodoro } from '@/features/focus/hooks/usePomodoro';
 import { NotificationBell } from '@/components/NotificationBell';
+import { QriousCodeLauncher, QriousCodePanel, QriousCodeProvider } from '@/features/qrious-code/QriousCode';
 
 export default function AppLayout() {
 
@@ -93,6 +94,7 @@ export default function AppLayout() {
 
   return (
     <SidebarProvider>
+      <QriousCodeProvider>
       <Sidebar>
         <SidebarHeader className="p-4 pb-2">
           <Link to="/dashboard" className="flex items-center gap-3 text-xl font-sans transition-colors text-foreground">
@@ -208,18 +210,18 @@ export default function AppLayout() {
                 </SidebarMenuItem>
               )}
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname.startsWith('/qbook')} tooltip="qBook">
+                <SidebarMenuButton asChild isActive={location.pathname.startsWith('/qbook')} tooltip="QBook">
                   <Link to="/qbook">
                     <FaBook />
-                    <span>qBook</span>
+                    <span>QBook</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
               <SidebarMenuItem>
-                <SidebarMenuButton asChild isActive={location.pathname.startsWith('/qstudio')} tooltip="qStudio">
+                <SidebarMenuButton asChild isActive={location.pathname.startsWith('/qstudio')} tooltip="QStudio">
                   <Link to="/qstudio">
                     <FaLightbulb />
-                    <span>qStudio</span>
+                    <span>QStudio</span>
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
@@ -352,6 +354,7 @@ export default function AppLayout() {
             )}>Qrious Quantum Platform</span>
           </div>
 
+          <div className="flex items-center gap-2 sm:gap-3">
           {/* Gamification Status Badges & Notification Bell (Learners Only) */}
           {!isEducator && (
             <div className="flex items-center gap-2 sm:gap-3 text-xs font-mono transition-opacity duration-500">
@@ -402,12 +405,19 @@ export default function AppLayout() {
               <NotificationBell />
             </div>
           )}
+          </div>
         </header>
 
-        {/* Main Content Area */}
-        <main className="flex-1 overflow-auto">
-          <Outlet />
-        </main>
+        {/* Main Content Area, with Qrious Code docked on the right when open */}
+        <div className="flex flex-1 min-h-0 overflow-hidden">
+          <main className="flex-1 overflow-auto">
+            <Outlet />
+          </main>
+          <QriousCodePanel />
+        </div>
+
+        {/* Qrious Code's Schrodinger's-cat launcher, bottom-right on every page */}
+        <QriousCodeLauncher />
 
         {!isEducator && (
           <>
@@ -420,6 +430,7 @@ export default function AppLayout() {
           </>
         )}
       </SidebarInset>
+      </QriousCodeProvider>
     </SidebarProvider>
   );
 }
