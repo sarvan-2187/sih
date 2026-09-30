@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import type { ReactNode } from 'react';
-import { ChevronLeft, ChevronRight, Loader2, RefreshCw } from 'lucide-react';
+import { Archive, ChevronLeft, ChevronRight, Loader2, RefreshCw } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import { useTheme } from '@/context/ThemeContext';
@@ -25,11 +25,15 @@ export function PlanOverview({
   completed,
   onReplan,
   replanning,
+  onArchive,
+  archiving,
 }: {
   plan: Plan;
   completed: Set<string>;
   onReplan: () => void;
   replanning: boolean;
+  onArchive: () => void;
+  archiving: boolean;
 }) {
   const { theme } = useTheme();
   const today = todayIso();
@@ -75,11 +79,17 @@ export function PlanOverview({
             {formatDate(plan.deadline)}
           </p>
         </div>
-        {/* The plan is never reshuffled automatically -- rebuilding is the learner's call. */}
-        <AccentButton variant="outline" onClick={onReplan} disabled={replanning}>
-          {replanning ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <RefreshCw className="h-4 w-4" aria-hidden />}
-          Re-plan from today
-        </AccentButton>
+        <div className="flex flex-wrap gap-2">
+          {/* The plan is never reshuffled automatically -- rebuilding is the learner's call. */}
+          <AccentButton variant="outline" onClick={onReplan} disabled={replanning || archiving}>
+            {replanning ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <RefreshCw className="h-4 w-4" aria-hidden />}
+            Re-plan from today
+          </AccentButton>
+          <AccentButton variant="outline" onClick={onArchive} disabled={replanning || archiving}>
+            {archiving ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : <Archive className="h-4 w-4" aria-hidden />}
+            Archive plan
+          </AccentButton>
+        </div>
       </div>
 
       {plan.strategy_note && (

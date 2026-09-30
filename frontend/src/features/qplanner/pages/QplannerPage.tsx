@@ -5,7 +5,7 @@ import { toast } from 'sonner';
 import { ExplorerTabPanel, ExplorerTabs, PageHero, PageShell } from '@/components/explorer';
 import { apiErrorMessage } from '@/api/verification';
 
-import { fetchPlan, replan, setTaskComplete } from '../api';
+import { archivePlan, fetchPlan, replan, setTaskComplete } from '../api';
 import { PlanBoard, TodayPanel } from '../components/PlanBoard';
 import { PlanCalendar, PlanGraph } from '../components/PlanViews';
 import { PlanOverview } from '../components/PlanOverview';
@@ -28,6 +28,7 @@ export default function QplannerPage() {
   const [busyTask, setBusyTask] = useState<string | null>(null);
   const [quizSprint, setQuizSprint] = useState<PlanSprint | null>(null);
   const [replanning, setReplanning] = useState(false);
+  const [archiving, setArchiving] = useState(false);
   const [view, setView] = useState<PlanView>('board');
 
   const adopt = useCallback((next: Plan) => {
@@ -88,6 +89,21 @@ export default function QplannerPage() {
     }
   }
 
+  async function archive() {
+    if (!window.confirm('Archive this plan? You can then build a new one.')) return;
+    setArchiving(true);
+    try {
+      await archivePlan();
+      setPlan(null);
+      setCompleted(new Set());
+      toast.success('Plan archived');
+    } catch (error) {
+      toast.error(apiErrorMessage(error, 'Could not archive the plan'));
+    } finally {
+      setArchiving(false);
+    }
+  }
+
   return (
     <PageShell>
       <PageHero
@@ -103,7 +119,7 @@ export default function QplannerPage() {
         <PlanSetup onPlanCreated={adopt} />
       ) : (
         <>
-          <PlanOverview key={plan.id} plan={plan} completed={completed} onReplan={rebuild} replanning={replanning} />
+          <PlanOverview key={plan.id} plan={plan} completed={completed} onReplan={rebuild} replanning={replanning} onArchive={archive} archiving={archiving} />
 
           <TodayPanel day={plan.today} completed={completed} busyTask={busyTask} onToggle={toggleTask} />
 
