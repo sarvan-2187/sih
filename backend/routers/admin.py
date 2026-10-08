@@ -1,4 +1,4 @@
-"""Admin review of educator/researcher identity verification. Admins are created only via promote_admin.py."""
+"""Admin review of educator/researcher identity verification. Admins are created only via scripts/promote_admin.py."""
 from datetime import datetime
 from typing import Literal
 

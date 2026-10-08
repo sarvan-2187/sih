@@ -1,8 +1,0 @@
-```text
-q0: |0⟩ ──H────■───────── M
-               │
-q1: |0⟩ ───────X────■──── M
-                    │
-q2: |0⟩ ────────────X──── M
-```
-Alternatively, $q_0$ can act as the control for both CNOTs (a star/fan-out topology), which is mathematically identical but may be compiled differently on physical hardware depending on qubit connectivity.

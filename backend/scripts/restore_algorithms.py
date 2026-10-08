@@ -1,11 +1,12 @@
 import json
+import os
 import asyncio
 from database import connect_to_mongo, get_db
 
 async def run():
     await connect_to_mongo()
     db = get_db()
-    with open('parsed_algorithms.json', 'r', encoding='utf-8') as f:
+    with open(os.path.join(os.path.dirname(__file__), 'parsed_algorithms.json'), 'r', encoding='utf-8') as f:
         data = json.load(f)
         
     print("Restoring MongoDB content from parsed_algorithms.json...")

@@ -10,7 +10,7 @@ if not MONGODB_URI:
     raise ValueError("MONGODB_URI environment variable is not set")
 
 def main():
-    with open('parsed_algorithms.json', 'r', encoding='utf-8') as f:
+    with open(os.path.join(os.path.dirname(__file__), 'parsed_algorithms.json'), 'r', encoding='utf-8') as f:
         data = json.load(f)
         
     print("Updating MongoDB...")

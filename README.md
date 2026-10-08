@@ -18,7 +18,7 @@
 
 **Qrious is one web platform for learning quantum computing end to end.** Learn a concept, build the circuit, run it on a simulator or real quantum hardware, ask an AI tutor when stuck, and track progress with quizzes, badges and streaks. Nothing to install: it all runs in the browser.
 
- [Live Prototype](https://prototype.qriouslabs.in)
+**Links:** [GitHub](https://github.com/sarvan-2187/sih) · [Live Prototype](https://prototype.qriouslabs.in)
 
 ![Qrious Landing Page](assets/images/landing.png)
 
@@ -237,11 +237,12 @@ flowchart LR
 ```
 ├── frontend/           React app (all UI)
 ├── backend/            Main FastAPI API: auth, courses, simulation, AI tutor, RAG, QRoute
+│   └── scripts/        Admin + seed scripts (run from backend/: python -m scripts.<name>)
 ├── qstudio_service/    Docker: video / audio / slides / Manim rendering
 ├── notebook_service/   Docker: qBook Jupyter kernels (WebSocket)
 ├── iqm_service/        Docker: IQM Resonance hardware bridge
 ├── llm_service/        Qrious Code model (weights hosted separately, git-ignored)
-├── assets/             README images
+├── assets/             README images + architecture diagrams (assets/diagrams/)
 └── docker-compose.yml  Runs all three Docker services together
 ```
 
