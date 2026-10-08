@@ -1,4 +1,4 @@
-# QRIOUS — Quantum-Ready Intelligent Online Upskilling & Simulation
+# QRIOUS: Quantum-Ready Intelligent Online Upskilling & Simulation
 
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
@@ -13,7 +13,7 @@
 > [!NOTE]
 > **Qrious Code v2.0 - model training in progress.**
 > Our in-house quantum coding assistant model is being retrained. Meanwhile, **Qrious Code v1.0 is already live and in use** on the platform.
-> The v1.0 weights (`model.safetensors`) are hosted in a separate location, not in this repo — see [`.gitignore`](./.gitignore) (`llm_service/qrious-code-1.0/model.safetensors`).
+> The v1.0 weights (`model.safetensors`) are hosted in a separate location, not in this repo, see [`.gitignore`](./.gitignore) (`llm_service/qrious-code-1.0/model.safetensors`).
 > Download the model from **Hugging Face: [https://huggingface.co/sarvan-2187/qrious-code-1.0](https://huggingface.co/sarvan-2187/qrious-code-1.0)**
 
 **Qrious is one web platform for learning quantum computing end to end.** Learn a concept, build the circuit, run it on a simulator or real quantum hardware, ask an AI tutor when stuck, and track progress with quizzes, badges and streaks. Nothing to install: it all runs in the browser.
