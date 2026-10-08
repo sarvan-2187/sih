@@ -79,6 +79,7 @@ flowchart LR
     end
 
     DATA[("MongoDB · ChromaDB<br/>Backblaze B2 · Firebase")]:::ext
+    QCM["Qrious Code v1.0<br/>in-house coding model"]:::ext
     AI["LLM providers<br/>Groq · Gemini · Mistral · …"]:::ext
     QPU["Quantum hardware<br/>IBM · IonQ · qBraid · IQM"]:::ext
 
@@ -86,6 +87,7 @@ flowchart LR
     FE -. "live code execution" .-> NB
     API --> QS & NB & IQ
     API --> DATA
+    API --> QCM
     API --> AI
     API --> QPU
     IQ --> QPU
@@ -133,17 +135,20 @@ flowchart LR
     L --> A["Answer + verified citations"]:::c
 ```
 
-### 3. One gateway for every AI call
+### 3. Two AI paths: our own model + a failover gateway
 
-No feature depends on a single AI vendor. If one provider is rate-limited or down, the gateway moves to the next one automatically.
+Coding help runs on **our own model, Qrious Code v1.0**. Everything else (tutor, qStudio, slides) goes through one AI Gateway, so no feature depends on a single vendor: if one provider is rate-limited or down, the gateway moves to the next one automatically.
 
 ```mermaid
 flowchart LR
     classDef a fill:#dcfce7,stroke:#15803d,color:#14532d
     classDef b fill:#dbeafe,stroke:#1e40af,color:#1e3a8a
     classDef c fill:#ede9fe,stroke:#6d28d9,color:#4c1d95
+    classDef m fill:#fef3c7,stroke:#b45309,color:#78350f
 
-    F["Tutor · qStudio<br/>Qrious Code · Slides"]:::a --> GW["AI Gateway<br/>retry · backoff · failover"]:::b
+    QC["Qrious Code panel"]:::a --> M1["Qrious Code v1.0<br/>in-house model · live"]:::m
+
+    F["Tutor · qStudio · Slides"]:::a --> GW["AI Gateway<br/>retry · backoff · failover"]:::b
     GW --> P1["Groq"]:::c
     GW --> P2["Gemini"]:::c
     GW --> P3["Mistral"]:::c
