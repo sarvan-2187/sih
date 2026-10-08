@@ -17,7 +17,7 @@ export default function FeatureGrid() {
   const { theme } = useTheme();
 
   return (
-    <section className={cn(
+    <section id="features" className={cn(
       "py-32 rounded-[1.5rem] md:rounded-[2.5rem] mt-4 px-6 md:px-16 w-full overflow-hidden relative transition-colors duration-300",
       theme === 'dark' ? "bg-zinc-950/50 text-white" : "bg-zinc-100 text-zinc-900"
     )}>

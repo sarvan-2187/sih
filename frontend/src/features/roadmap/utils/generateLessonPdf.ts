@@ -760,7 +760,7 @@ export const generateLessonPdf = (topicTitle: string, topicSlug: string, materia
     doc.setTextColor(16, 185, 129);
     doc.setFont('helvetica', 'bold');
     doc.setFontSize(9);
-    doc.text('QRIOUS • QUANTUM ACADEMY', 15, 10);
+    doc.text('QUANTLMS • QUANTUM ACADEMY', 15, 10);
 
     doc.setTextColor(255, 255, 255);
     doc.setFont('helvetica', 'bold');

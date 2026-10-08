@@ -86,32 +86,29 @@ async def get_verified_firebase_user(credentials: HTTPAuthorizationCredentials =
 async def get_current_user(decoded_token: dict = Depends(get_verified_firebase_user)):
     """
     Dependency that returns the full MongoDB user document based on the verified Firebase token.
-    Falls back to a default user dict if MongoDB is initializing or unavailable,
-    and automatically upserts missing users into db.users.
+    Falls back to a default user dict if MongoDB is initializing or unavailable.
+
+    Raises 404 (instead of auto-creating a "learner" doc) when a verified Firebase user has
+    no MongoDB doc yet — this is the signal the frontend's ProtectedRoute uses to redirect to
+    /onboarding. Auto-creating here used to silently insert the user as role="learner" /
+    full_name="Quantum Learner" on whichever protected endpoint happened to fire first after
+    login, so /api/user/me never actually 404'd and onboarding (role, age, interested topic)
+    was permanently skipped.
     """
     db = get_db()
     uid = decoded_token.get("uid")
-    
+
     user_doc = None
     if db is not None and uid:
         try:
             user_doc = await db.users.find_one({"firebase_uid": uid})
             if not user_doc:
-                default_name = decoded_token.get("name") or (decoded_token.get("email", "").split("@")[0] if decoded_token.get("email") else "Quantum Learner")
-                new_user = {
-                    "firebase_uid": uid,
-                    "email": decoded_token.get("email", ""),
-                    "full_name": default_name,
-                    "display_name": default_name,
-                    "role": "learner",
-                    "xp_total": 0
-                }
-                res = await db.users.insert_one(new_user)
-                new_user["_id"] = str(res.inserted_id)
-                return new_user
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not onboarded")
+        except HTTPException:
+            raise
         except Exception as e:
-            print(f"[Auth Warning] Failed to query/create user document from DB: {e}")
-            
+            print(f"[Auth Warning] Failed to query user document from DB: {e}")
+
     if not user_doc:
         default_name = decoded_token.get("name") or "Quantum Learner"
         return {

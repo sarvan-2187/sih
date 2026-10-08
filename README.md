@@ -1,4 +1,4 @@
-# Qrious - AI Quantum Computing Tutor
+# QRIOUS — Quantum-Ready Intelligent Online Upskilling & Simulation
 
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)](https://react.dev)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
@@ -7,10 +7,11 @@
 [![Qiskit](https://img.shields.io/badge/Qiskit-Quantum-6929C4?logo=qiskit&logoColor=white)](https://www.ibm.com/quantum/qiskit)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas-47A248?logo=mongodb&logoColor=white)](https://www.mongodb.com/atlas)
 [![Docker](https://img.shields.io/badge/Docker-Microservices-2496ED?logo=docker&logoColor=white)](https://www.docker.com)
-[![Vercel](https://img.shields.io/badge/Vercel-Frontend-000000?logo=vercel&logoColor=white)](https://vercel.com)
 [![Firebase](https://img.shields.io/badge/Firebase-Auth-FFCA28?logo=firebase&logoColor=black)](https://firebase.google.com)
 
-Qrious is an interactive, education and visualization tool designed to make learning quantum computing engaging and accessible. It was built for the Quant-A-Thon.
+Qrious unifies quantum learning, circuit design, coding, simulation, and assessment into a single web-based platform — students build and simulate quantum circuits in the browser (Qiskit + Qiskit Aer), get doubts answered by a RAG-powered AI tutor grounded in course material, and track progress through role-based dashboards, quizzes, and gamification.
+
+**Links:** [GitHub](https://github.com/victor-van-doom-rdj/hacknowa-public) · [Prototype](https://prototype.qriouslabs.in)
 
 ## Features
 

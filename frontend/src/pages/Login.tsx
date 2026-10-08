@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FaGithub } from 'react-icons/fa';
 import { FcGoogle } from 'react-icons/fc';
 import { isStaff, onboardingPath } from '@/lib/roles';
@@ -184,22 +184,19 @@ export default function Login() {
           </div>
 
           <form onSubmit={handleEmailLogin} className="space-y-4 mt-8">
-            <ToggleGroup 
-              type="single" 
-              value={role} 
-              onValueChange={(val) => { if (val) setRole(val) }} 
-              className="mb-6 w-full flex bg-muted p-1 rounded-md"
-            >
-              <ToggleGroupItem value="learner" className="flex-1 rounded-sm data-[state=on]:bg-background data-[state=on]:shadow-sm h-10">
-                Learner
-              </ToggleGroupItem>
-              <ToggleGroupItem value="educator" className="flex-1 rounded-sm data-[state=on]:bg-background data-[state=on]:shadow-sm h-10">
-                Educator
-              </ToggleGroupItem>
-              <ToggleGroupItem value="researcher" className="flex-1 rounded-sm data-[state=on]:bg-background data-[state=on]:shadow-sm h-10">
-                Researcher
-              </ToggleGroupItem>
-            </ToggleGroup>
+            <div className="space-y-2 mb-6">
+              <Label htmlFor="login-role">I am a</Label>
+              <Select value={role} onValueChange={setRole}>
+                <SelectTrigger id="login-role" className="h-10">
+                  <SelectValue placeholder="Select your role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="learner">Learner</SelectItem>
+                  <SelectItem value="educator">Educator</SelectItem>
+                  <SelectItem value="researcher">Researcher</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
 
             {error && (
               <div className="p-3 rounded-md bg-destructive/15 text-destructive text-sm font-medium">

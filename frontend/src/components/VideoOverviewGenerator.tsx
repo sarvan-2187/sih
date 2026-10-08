@@ -7,7 +7,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { requestVideoOverview, getVideoOverviewStatus } from '../api/videoOverviews';
 import type { VideoOverviewStatus, VideoTemplate, VoiceGender } from '../api/videoOverviews';
 import { VideoResourcePlayer } from './VideoResourcePlayer';
-import { VideoServiceLocalOnlyNotice } from './VideoServiceLocalOnlyNotice';
 import { FaFilm, FaCheckCircle, FaExclamationCircle } from 'react-icons/fa';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -60,12 +59,6 @@ interface VideoOverviewGeneratorProps {
 }
 
 export default function VideoOverviewGenerator(props: VideoOverviewGeneratorProps) {
-  // Branch before any hooks run, so the two variants each call a fixed, consistent set of
-  // hooks (see VideoOverviewGeneratorInner) rather than the same component conditionally
-  // skipping them — import.meta.env.PROD is fixed for the lifetime of a given build/session.
-  if (import.meta.env.PROD) {
-    return <VideoServiceLocalOnlyNotice />;
-  }
   return <VideoOverviewGeneratorInner {...props} />;
 }
 

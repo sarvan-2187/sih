@@ -30,7 +30,7 @@ export default function WalkthroughSection() {
         <div className="w-full max-w-4xl relative aspect-video rounded-xl overflow-hidden shadow-2xl bg-zinc-900 border border-zinc-800">
           <HeroVideoDialog
             animationStyle="top-in-bottom-out"
-            videoSrc="https://www.youtube.com/embed/qh3NGpYRG3I?si=4rb-zSdDkVK9qxxb"
+            videoSrc="https://www.youtube.com/embed/3Swa555nqso?si=ZqKgSWZkdGNLCU19"
             thumbnailSrc="https://startup-template-sage.vercel.app/hero-light.png"
             thumbnailAlt="Hero Video"
             className="w-full h-full [&>button]:w-full [&>button]:h-full [&_img]:w-full [&_img]:h-full [&_img]:object-cover [&_img]:rounded-xl"

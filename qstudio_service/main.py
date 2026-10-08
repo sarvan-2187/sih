@@ -1,3 +1,4 @@
+import asyncio
 import os
 from contextlib import asynccontextmanager
 
@@ -14,6 +15,18 @@ from pipeline_manim import run_animation_pipeline
 from pipeline_slides import run_slides_pipeline
 
 QSTUDIO_SERVICE_SECRET = os.getenv("QSTUDIO_SERVICE_SECRET")
+
+# Each pipeline already offloads its blocking subprocess.run (ffmpeg/Manim) calls via
+# asyncio.to_thread, so the event loop itself never blocks — but to_thread's default
+# executor allows far more concurrent threads than this host has CPU cores, so multiple
+# simultaneous renders would thrash the CPU and blow each pipeline's own internal ffmpeg/
+# Manim timeouts, surfacing as jobs that look stuck. This semaphore caps actual concurrent
+# renders to the VPS's vCPU count — additional submissions queue here (awaiting the
+# semaphore) without blocking the server from accepting/serving other requests.
+# ponytail: fixed cap, not read from CPU count — raise RENDER_CONCURRENCY env var if this
+# VPS is resized.
+RENDER_CONCURRENCY = int(os.getenv("RENDER_CONCURRENCY", "2"))
+_render_semaphore = asyncio.Semaphore(RENDER_CONCURRENCY)
 
 
 @asynccontextmanager
@@ -65,7 +78,8 @@ async def render_video_overview(payload: VideoOverviewTrigger, x_internal_secret
         raise HTTPException(status_code=404, detail="Video overview job not found")
 
     print(f"[{payload.video_overview_id}] starting pipeline", flush=True)
-    result = await run_pipeline(job)
+    async with _render_semaphore:
+        result = await run_pipeline(job)
     print(f"[{payload.video_overview_id}] pipeline finished: {result}", flush=True)
     return result
 
@@ -79,7 +93,8 @@ async def render_audio_overview(payload: AudioOverviewTrigger, x_internal_secret
         raise HTTPException(status_code=401, detail="Invalid internal secret")
 
     print(f"[qstudio-audio {payload.output_id}] starting pipeline", flush=True)
-    await run_audio_pipeline(payload.output_id, payload.grounding_text, payload.voice_a, payload.voice_b)
+    async with _render_semaphore:
+        await run_audio_pipeline(payload.output_id, payload.grounding_text, payload.voice_a, payload.voice_b)
     print(f"[qstudio-audio {payload.output_id}] pipeline finished", flush=True)
     return {"status": "done"}
 
@@ -93,7 +108,8 @@ async def render_slides(payload: SlidesTrigger, x_internal_secret: str = Header(
         raise HTTPException(status_code=401, detail="Invalid internal secret")
 
     print(f"[qstudio-slides {payload.output_id}] starting pipeline", flush=True)
-    await run_slides_pipeline(payload.output_id, payload.grounding_text, payload.theme)
+    async with _render_semaphore:
+        await run_slides_pipeline(payload.output_id, payload.grounding_text, payload.theme)
     print(f"[qstudio-slides {payload.output_id}] pipeline finished", flush=True)
     return {"status": "done"}
 
@@ -107,6 +123,7 @@ async def render_animation(payload: AnimationTrigger, x_internal_secret: str = H
         raise HTTPException(status_code=401, detail="Invalid internal secret")
 
     print(f"[qstudio-animation {payload.output_id}] starting pipeline", flush=True)
-    await run_animation_pipeline(payload.output_id, payload.grounding_text, payload.voice, payload.theme)
+    async with _render_semaphore:
+        await run_animation_pipeline(payload.output_id, payload.grounding_text, payload.voice, payload.theme)
     print(f"[qstudio-animation {payload.output_id}] pipeline finished", flush=True)
     return {"status": "done"}

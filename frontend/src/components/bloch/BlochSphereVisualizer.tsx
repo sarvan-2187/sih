@@ -402,7 +402,7 @@ export const BlochSphereVisualizer: React.FC = () => {
           <TasksPanel />
 
           <p className="text-right text-[10px] text-muted-foreground/30 font-mono">
-            qrious · bloch sphere
+            quantlms · bloch sphere
           </p>
         </div>
       </div>

@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "ai-color-palette",
+        "value": "*",
+        "files": [
+          "frontend/src/pages/QuantLMSLanding.tsx"
+        ],
+        "createdAt": "2026-10-06T16:34:00.095Z",
+        "reason": "AGENTS.md mandates purple/glassmorphism as Qrious's intentional brand palette, not accidental AI-default styling"
+      }
+    ]
+  }
+}

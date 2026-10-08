@@ -166,7 +166,7 @@ export const EmbeddedPlayground: React.FC<EmbeddedPlaygroundProps> = ({
         </div>
       )}
       
-      <div className="flex justify-end border-t border-slate-200 dark:border-zinc-800 p-4 bg-white dark:bg-zinc-900">
+      {/* TEMP(Qrious): full playground link hidden */ false && <div className="flex justify-end border-t border-slate-200 dark:border-zinc-800 p-4 bg-white dark:bg-zinc-900">
         <button 
           onClick={() => {
             sessionStorage.setItem('qrious_playground_algorithm_transfer', JSON.stringify({
@@ -182,7 +182,7 @@ export const EmbeddedPlayground: React.FC<EmbeddedPlaygroundProps> = ({
         >
           <ExternalLink size={16} /> Run in Full Playground
         </button>
-      </div>
+      </div>}
     </div>
   );
 };

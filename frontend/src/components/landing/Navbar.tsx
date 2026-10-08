@@ -72,16 +72,21 @@ export default function Navbar() {
           border: isScrolled ? (theme === 'dark' ? '1px solid rgba(255,255,255,0.05)' : '1px solid rgba(0,0,0,0.05)') : '1px solid rgba(255,255,255,0.15)'
         }}
       >
-        {['Playground', 'Visualizer', 'AI Tutor', 'Learning Hub'].map((link) => (
-          <a 
-            key={link}
-            href={`#${link.toLowerCase().replace(' ', '-')}`} 
+        {[
+          { label: 'Playground', href: '#features' },
+          { label: 'Visualizer', href: '#features' },
+          { label: 'AI Tutor', href: '#features' },
+          { label: 'Learning Hub', href: '#features' },
+        ].map(({ label, href }) => (
+          <a
+            key={label}
+            href={href}
             className={cn(
               "px-5 py-2 rounded-full transition-all text-sm font-medium",
               getTextColor()
             )}
           >
-            {link}
+            {label}
           </a>
         ))}
       </div>

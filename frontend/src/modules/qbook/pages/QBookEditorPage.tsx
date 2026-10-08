@@ -8,7 +8,6 @@ import { useQBookApi } from '../hooks/useQBookApi';
 import { useQBookKernelSocket } from '../hooks/useQBookKernelSocket';
 import type { KernelStatus } from '../hooks/useQBookKernelSocket';
 import { NotebookCell } from '../components/NotebookCell';
-import { QBookLocalOnlyNotice } from '../components/QBookLocalOnlyNotice';
 import { DatasetManagerPanel } from '../components/DatasetManagerPanel';
 import type { Notebook, NotebookCell as NotebookCellType, NotebookCellOutput } from '../types';
 
@@ -204,19 +203,6 @@ const QBookEditorPage: React.FC = () => {
     if (!notebook || !notebookId) return;
     updateNotebook(notebookId, { title: notebook.title }).catch(console.error);
   };
-
-  if (import.meta.env.PROD) {
-    return (
-      <div className={cn(
-        "w-full h-full transition-colors duration-300 py-12 px-6 md:px-12",
-        theme === 'dark' ? "text-white" : "text-zinc-900",
-      )}>
-        <div className="max-w-3xl mx-auto">
-          <QBookLocalOnlyNotice />
-        </div>
-      </div>
-    );
-  }
 
   if (loadError || error) {
     return (

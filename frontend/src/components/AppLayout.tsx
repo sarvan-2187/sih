@@ -163,6 +163,8 @@ export default function AppLayout() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              {/* TEMP(Qrious): Gate Puzzles hidden */}
+              {false && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={location.pathname.startsWith('/puzzles')} tooltip="Gate Puzzles">
                   <Link to="/puzzles">
@@ -171,6 +173,7 @@ export default function AppLayout() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              )}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={location.pathname.startsWith('/qrating')} tooltip="Q-Rating">
                   <Link to="/qrating">
@@ -233,6 +236,8 @@ export default function AppLayout() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              {/* TEMP(Qrious): QRoute hidden */}
+              {false && (
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={location.pathname === '/qroute'} tooltip="QRoute">
                   <Link to="/qroute">
@@ -241,6 +246,7 @@ export default function AppLayout() {
                   </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
+              )}
               <SidebarMenuItem>
                 <SidebarMenuButton asChild isActive={location.pathname === '/focus'} tooltip={focusText}>
                   <Link to="/focus">

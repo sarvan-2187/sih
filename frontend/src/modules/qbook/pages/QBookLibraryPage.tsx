@@ -6,7 +6,6 @@ import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { useQBookApi } from '../hooks/useQBookApi';
 import { NotebookTile } from '../components/NotebookTile';
-import { QBookLocalOnlyNotice } from '../components/QBookLocalOnlyNotice';
 import type { NotebookSummary } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import { SAMPLE_QML_NOTEBOOKS, type QmlNotebookTemplate } from '../data/sampleQmlNotebooks';
@@ -70,19 +69,6 @@ const QBookLibraryPage: React.FC = () => {
       refresh();
     }
   };
-
-  if (import.meta.env.PROD) {
-    return (
-      <div className={cn(
-        "w-full h-full transition-colors duration-300 py-12 px-6 md:px-12",
-        theme === 'dark' ? "text-white" : "text-zinc-900",
-      )}>
-        <div className="max-w-3xl mx-auto">
-          <QBookLocalOnlyNotice />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className={cn(

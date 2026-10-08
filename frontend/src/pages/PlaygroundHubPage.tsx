@@ -10,12 +10,7 @@ const PlaygroundHubPage: React.FC = () => {
   const { theme } = useTheme();
 
   const playgrounds = [
-    {
-      title: 'Gates Playground',
-      desc: 'Build and simulate quantum circuits using a visual drag-and-drop editor.',
-      href: '/playground/gates',
-      icon: GripHorizontal,
-    },
+    // TEMP(Qrious): Gates Playground card hidden
     {
       title: 'QForge Hardware Simulator',
       desc: 'Assemble a superconducting quantum computer stage-by-stage and manage thermal budgets.',

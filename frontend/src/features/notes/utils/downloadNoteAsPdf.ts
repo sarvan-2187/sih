@@ -347,5 +347,5 @@ export async function downloadNoteAsPdf(note: Note): Promise<void> {
     .replace(/[^a-z0-9]/gi, "_")
     .toLowerCase()
     .slice(0, 60);
-  pdf.save(`qrious_${safeTitle}.pdf`);
+  pdf.save(`quantlms_${safeTitle}.pdf`);
 }

@@ -1,6 +1,5 @@
 import Navbar from '@/components/landing/Navbar';
 import HeroSection from '@/components/landing/HeroSection';
-import WalkthroughSection from '@/components/landing/WalkthroughSection';
 import FeatureGrid from '@/components/landing/FeatureGrid';
 import WorkflowBlock from '@/components/landing/WorkflowBlock';
 import AudienceBento from '@/components/landing/AudienceBento';
@@ -22,7 +21,6 @@ export default function Landing() {
         
         <div className="w-full max-w-[1600px] flex flex-col gap-4">
           <HeroSection />
-          <WalkthroughSection />
           <FeatureGrid />
           <WorkflowBlock />
           <AudienceBento />
@@ -31,7 +29,6 @@ export default function Landing() {
 
         <footer className="w-full text-center py-8 mt-4 flex flex-col gap-2 items-center text-sm font-medium opacity-60">
           <p>&copy; {new Date().getFullYear()} Qrious. All rights reserved.</p>
-          <p>Built by team schrodinger squad</p>
         </footer>
       </main>
     </SmoothScroll>

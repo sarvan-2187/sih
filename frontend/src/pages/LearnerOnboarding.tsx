@@ -1,20 +1,28 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { auth } from '../firebase';
 import { Button } from '@/components/ui/button';
-import { LogOut } from 'lucide-react';
+import { LogOut, ArrowLeft, ArrowRight } from 'lucide-react';
 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { clearSignupRole } from '@/lib/roles';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
+
+const STEPS = ['Name', 'Role', 'Age', 'Interest'] as const;
 
 export default function LearnerOnboarding() {
+  const [searchParams] = useSearchParams();
+  const initialRole = searchParams.get('role') === 'researcher' ? 'researcher'
+    : searchParams.get('role') === 'educator' ? 'educator' : 'learner';
+  const [step, setStep] = useState(0);
   const [name, setName] = useState('');
+  const [role, setRole] = useState<'learner' | 'educator' | 'researcher'>(initialRole);
   const [age, setAge] = useState('');
   const [topic, setTopic] = useState('');
-  const role = 'learner';
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { currentUser } = useAuth();
@@ -29,19 +37,35 @@ export default function LearnerOnboarding() {
     }
   };
 
+  const canAdvance =
+    step === 0 ? name.trim().length > 0 :
+    step === 1 ? true :
+    step === 2 ? age.trim().length > 0 :
+    topic.length > 0;
+
+  const goNext = () => {
+    if (!canAdvance) return;
+    setError('');
+    setStep((s) => Math.min(s + 1, STEPS.length - 1));
+  };
+  const goBack = () => {
+    setError('');
+    setStep((s) => Math.max(s - 1, 0));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!currentUser) return;
+    if (!currentUser || !canAdvance) return;
     setLoading(true);
     setError('');
 
     try {
       const token = await currentUser.getIdToken();
-      
+
       const API_URL = import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000';
       const response = await fetch(`${API_URL}/api/onboarding`, {
         method: 'POST',
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         },
@@ -55,7 +79,7 @@ export default function LearnerOnboarding() {
 
       if (response.ok) {
         clearSignupRole();
-        navigate('/dashboard');
+        navigate(role === 'learner' ? '/dashboard' : '/verification');
       } else {
         const errorData = await response.json();
         setError(errorData.detail || "Failed to save onboarding data");
@@ -80,15 +104,15 @@ export default function LearnerOnboarding() {
         {/* Left Column - Image & Branding */}
         <div className="hidden lg:flex flex-col justify-between w-1/2 p-12 relative overflow-hidden bg-black text-white">
           <div className="absolute inset-0 z-0">
-            <img 
-              src="/bloch_sphere.png" 
-              alt="Quantum Bloch Sphere" 
+            <img
+              src="/bloch_sphere.png"
+              alt="Quantum Bloch Sphere"
               className="w-full h-full object-cover opacity-90 mix-blend-screen scale-110"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent"></div>
             <div className="absolute inset-0 bg-emerald-900/20 mix-blend-overlay"></div>
           </div>
-          
+
           <div className="relative z-10 flex justify-between items-center w-full">
             <div className="flex items-center gap-3 text-2xl font-sans">
               <img src="/apple-touch-icon.png" alt="Qrious Logo" className="w-10 h-10 rounded-full" />
@@ -130,58 +154,144 @@ export default function LearnerOnboarding() {
               </p>
             </div>
 
+            {/* Step progress indicator */}
+            <div className="flex items-center gap-2 mb-8" aria-label={`Step ${step + 1} of ${STEPS.length}`}>
+              {STEPS.map((label, i) => (
+                <div key={label} className="flex items-center gap-2 flex-1">
+                  <div
+                    className={cn(
+                      "h-1.5 flex-1 rounded-full transition-colors duration-300",
+                      i <= step ? "bg-emerald-500" : "bg-muted"
+                    )}
+                  />
+                </div>
+              ))}
+            </div>
+
             <form onSubmit={handleSubmit} className="space-y-6">
               {error && (
                 <div className="p-3 rounded-md bg-destructive/15 text-destructive text-sm font-medium">
                   {error}
                 </div>
               )}
-              
-              <div className="space-y-2">
-                <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
-                <Input 
-                  id="name" 
-                  placeholder="Ada Lovelace" 
-                  value={name} 
-                  onChange={(e) => setName(e.target.value)} 
-                  required 
-                  className="h-12"
-                />
+
+              <AnimatePresence mode="wait">
+                {step === 0 && (
+                  <motion.div
+                    key="name"
+                    initial={{ opacity: 0, x: 24 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -24 }}
+                    transition={{ duration: 0.25 }}
+                    className="space-y-2"
+                  >
+                    <Label htmlFor="name" className="text-sm font-medium">Full Name</Label>
+                    <Input
+                      id="name"
+                      placeholder="Ada Lovelace"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      autoFocus
+                      className="h-12"
+                    />
+                  </motion.div>
+                )}
+
+                {step === 1 && (
+                  <motion.div
+                    key="role"
+                    initial={{ opacity: 0, x: 24 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -24 }}
+                    transition={{ duration: 0.25 }}
+                    className="space-y-2"
+                  >
+                    <Label htmlFor="role" className="text-sm font-medium">I am a</Label>
+                    <Select value={role} onValueChange={(v) => setRole(v as typeof role)}>
+                      <SelectTrigger id="role" className="h-12">
+                        <SelectValue placeholder="Select your role" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="learner">Learner / Student</SelectItem>
+                        <SelectItem value="educator">Educator</SelectItem>
+                        <SelectItem value="researcher">Researcher</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {role !== 'learner' && (
+                      <p className="text-xs text-muted-foreground pt-1">
+                        Educator and researcher accounts unlock after a quick identity verification step.
+                      </p>
+                    )}
+                  </motion.div>
+                )}
+
+                {step === 2 && (
+                  <motion.div
+                    key="age"
+                    initial={{ opacity: 0, x: 24 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -24 }}
+                    transition={{ duration: 0.25 }}
+                    className="space-y-2"
+                  >
+                    <Label htmlFor="age" className="text-sm font-medium">Age</Label>
+                    <Input
+                      id="age"
+                      type="number"
+                      min="1"
+                      placeholder="25"
+                      value={age}
+                      onChange={(e) => setAge(e.target.value)}
+                      autoFocus
+                      className="h-12"
+                    />
+                  </motion.div>
+                )}
+
+                {step === 3 && (
+                  <motion.div
+                    key="topic"
+                    initial={{ opacity: 0, x: 24 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: -24 }}
+                    transition={{ duration: 0.25 }}
+                    className="space-y-2"
+                  >
+                    <Label htmlFor="topic" className="text-sm font-medium">Interested Quantum Topic</Label>
+                    <Select value={topic} onValueChange={setTopic}>
+                      <SelectTrigger className="h-12">
+                        <SelectValue placeholder="Select a topic" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Quantum Algorithms">Quantum Algorithms</SelectItem>
+                        <SelectItem value="Quantum Cryptography">Quantum Cryptography</SelectItem>
+                        <SelectItem value="Quantum Hardware">Quantum Hardware</SelectItem>
+                        <SelectItem value="Quantum Machine Learning">Quantum Machine Learning</SelectItem>
+                        <SelectItem value="General Physics">General Physics</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+
+              <div className="flex items-center gap-3 mt-8">
+                {step > 0 && (
+                  <Button type="button" variant="outline" className="h-12 px-5" onClick={goBack} disabled={loading}>
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back
+                  </Button>
+                )}
+                {step < STEPS.length - 1 ? (
+                  <Button type="button" className="flex-1 h-12 text-lg" onClick={goNext} disabled={!canAdvance}>
+                    Next
+                    <ArrowRight className="w-4 h-4 ml-2" />
+                  </Button>
+                ) : (
+                  <Button type="submit" className="flex-1 h-12 text-lg" disabled={loading || !canAdvance}>
+                    {role === 'learner' ? 'Continue to Dashboard' : 'Continue to Verification'}
+                  </Button>
+                )}
               </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="age" className="text-sm font-medium">Age</Label>
-                <Input 
-                  id="age" 
-                  type="number" 
-                  min="1" 
-                  placeholder="25" 
-                  value={age} 
-                  onChange={(e) => setAge(e.target.value)} 
-                  required 
-                  className="h-12"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="topic" className="text-sm font-medium">Interested Quantum Topic</Label>
-                <Select value={topic} onValueChange={setTopic} required>
-                  <SelectTrigger className="h-12">
-                    <SelectValue placeholder="Select a topic" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Quantum Algorithms">Quantum Algorithms</SelectItem>
-                    <SelectItem value="Quantum Cryptography">Quantum Cryptography</SelectItem>
-                    <SelectItem value="Quantum Hardware">Quantum Hardware</SelectItem>
-                    <SelectItem value="Quantum Machine Learning">Quantum Machine Learning</SelectItem>
-                    <SelectItem value="General Physics">General Physics</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              
-              <Button type="submit" className="w-full h-12 text-lg mt-8" disabled={loading}>
-                Continue to Dashboard
-              </Button>
             </form>
           </div>
         </div>

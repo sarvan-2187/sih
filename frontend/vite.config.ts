@@ -6,6 +6,8 @@ import tailwindcss from '@tailwindcss/vite'
 // https://vite.dev/config/
 export default defineConfig({
   plugins: [react(), tailwindcss()],
+  // TEMP(QuantLMS): also expose QUANTLMS_* env vars (QUANTLMS_LANDING_PAGE) to client code.
+  envPrefix: ['VITE_', 'QUANTLMS_'],
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),

@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "ai-color-palette",
+        "value": "*",
+        "files": [
+          "src/pages/QuantLMSLanding.tsx"
+        ],
+        "createdAt": "2026-09-30T03:39:24.571Z",
+        "reason": "user request: supplied a purple SaaS reference (saleshookai screenshot) and asked for this style landing page"
+      }
+    ]
+  }
+}

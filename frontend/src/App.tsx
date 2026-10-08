@@ -2,11 +2,11 @@ import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Loader2 } from 'lucide-react';
 import Landing from './pages/Landing';
+import QuantLMSLanding from './pages/QuantLMSLanding';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
 import ForgotPassword from './pages/ForgotPassword';
 import LearnerOnboarding from './pages/LearnerOnboarding';
-import FacultyOnboarding from './pages/FacultyOnboarding';
 import VerifyEmail from './pages/VerifyEmail';
 import Dashboard from './pages/Dashboard';
 import ResourceLibrary from './pages/ResourceLibrary';
@@ -70,7 +70,6 @@ import QBookLibraryPage from './modules/qbook/pages/QBookLibraryPage';
 import QBookEditorPage from './modules/qbook/pages/QBookEditorPage';
 import QStudioLibraryPage from './modules/qstudio/pages/QStudioLibraryPage';
 import QStudioStudySpacePage from './modules/qstudio/pages/QStudioStudySpacePage';
-import QStudioLocalOnlyPage from './modules/qstudio/pages/QStudioLocalOnlyPage';
 import { PomodoroProvider } from './features/focus/context/PomodoroContext';
 import FocusModePage from './pages/FocusModePage';
 import './index.css';
@@ -154,7 +153,7 @@ function ProtectedRoute({ children, allowedRoles, requireVerified }: { children:
   
   if (!currentUser) return <Navigate to="/login" replace />;
   
-  if (allowedRoles && userRole && !allowedRoles.includes(userRole as Role)) {
+  if (allowedRoles && !allowedRoles.includes(userRole as Role)) {
     return <Navigate to={userRole === 'admin' ? '/admin' : '/courses'} replace />;
   }
 
@@ -173,7 +172,8 @@ function App() {
           <AuthProvider>
             <Router>
               <Routes>
-              <Route path="/" element={<Landing />} />
+              {/* TEMP(QuantLMS): QUANTLMS_LANDING_PAGE=1 swaps in the purple landing page */}
+              <Route path="/" element={import.meta.env.QUANTLMS_LANDING_PAGE === '1' ? <QuantLMSLanding /> : <Landing />} />
               <Route path="/login" element={<Login />} />
               <Route path="/admin-demo" element={<AdminMockup />} />
               <Route path="/q-rating/:handle" element={<PublicQRatingPage />} />
@@ -192,7 +192,7 @@ function App() {
               } />
               <Route path="/onboarding/faculty" element={
                 <ProtectedRoute>
-                  <FacultyOnboarding />
+                  <LearnerOnboarding />
                 </ProtectedRoute>
               } />
               
@@ -344,26 +344,14 @@ function App() {
                     <PlaygroundHubPage />
                   </ProtectedRoute>
                 } />
-                <Route path="/playground/gates" element={
-                  <ProtectedRoute>
-                    <GatesPlaygroundPage />
-                  </ProtectedRoute>
-                } />
+                {/* TEMP(QuantLMS): GatesPlaygroundPage hidden */}<Route path="/playground/gates" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/quantum-library" element={
                   <ProtectedRoute>
                     <QuantumLibrary />
                   </ProtectedRoute>
                 } />
-                <Route path="/puzzles" element={
-                  <ProtectedRoute>
-                    <PuzzlesLandingPage />
-                  </ProtectedRoute>
-                } />
-                <Route path="/puzzles/:id" element={
-                  <ProtectedRoute>
-                    <PuzzlePage />
-                  </ProtectedRoute>
-                } />
+                {/* TEMP(QuantLMS): PuzzlesLandingPage hidden */}<Route path="/puzzles" element={<Navigate to="/dashboard" replace />} />
+                {/* TEMP(QuantLMS): PuzzlePage hidden */}<Route path="/puzzles/:id" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/algorithms" element={
                   <ProtectedRoute allowedRoles={STAFF_ROLES} requireVerified>
                     <AlgorithmExplorerLandingPage />
@@ -401,12 +389,12 @@ function App() {
                 } />
                 <Route path="/qstudio" element={
                   <ProtectedRoute>
-                    {import.meta.env.PROD ? <QStudioLocalOnlyPage /> : <QStudioLibraryPage />}
+                    <QStudioLibraryPage />
                   </ProtectedRoute>
                 } />
                 <Route path="/qstudio/:studySpaceId" element={
                   <ProtectedRoute>
-                    {import.meta.env.PROD ? <QStudioLocalOnlyPage /> : <QStudioStudySpacePage />}
+                    <QStudioStudySpacePage />
                   </ProtectedRoute>
                 } />
                 <Route path="/bloch" element={
@@ -414,12 +402,8 @@ function App() {
                     <BlochSphereVisualizer />
                   </ProtectedRoute>
                 } />
-                <Route path="/qroute" element={
-                  <ProtectedRoute><QRoutePage /></ProtectedRoute>
-                } />
-                <Route path="/qroute/jobs/:jobId" element={
-                  <ProtectedRoute><QRouteJobDetailPage /></ProtectedRoute>
-                } />
+                {/* TEMP(QuantLMS): QRoute hidden */}<Route path="/qroute" element={<Navigate to="/dashboard" replace />} />
+                <Route path="/qroute/jobs/:jobId" element={<Navigate to="/dashboard" replace />} />
                 <Route path="/qforge" element={
                   <ProtectedRoute><QForgeLandingPage /></ProtectedRoute>
                 } />
