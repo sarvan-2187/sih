@@ -9,6 +9,8 @@ Thumbs.db
 *.sln
 *.sw?
 .env
+qrious-vps
+qrious-vps.pub
 
 # Python (Backend)
 __pycache__/
