@@ -69,7 +69,7 @@ flowchart LR
     FE["Frontend<br/>React + TypeScript"]:::user
 
     subgraph BE["Main API — FastAPI"]
-        API["Auth · Courses · Quizzes<br/>Simulation · AI Tutor"]:::core
+        API["Auth · Courses · Quizzes<br/>Simulation · AI Tutor · Qrious Code"]:::core
     end
 
     subgraph MS["Helper services (Docker)"]
@@ -229,7 +229,7 @@ flowchart LR
 | **Frontend** | React 19, TypeScript, Vite, Tailwind CSS, Shadcn UI, Magic UI, React Three Fiber |
 | **Backend** | FastAPI (Python, async) |
 | **Quantum** | Qiskit, Qiskit Aer, OpenQASM, QAOA; IBM / IonQ / qBraid / IQM hardware |
-| **AI** | LangChain, multi-provider AI gateway (Groq, Gemini, Mistral, NVIDIA, Kimi, Z.AI), Qrious Code model |
+| **AI** | Qrious Code v1.0 (in-house coding model, live; v2.0 training), LangChain, multi-provider AI gateway (Groq, Gemini, Mistral, NVIDIA, Kimi, Z.AI) |
 | **RAG** | ChromaDB, BAAI/bge-small-en-v1.5 embeddings, BM25, cross-encoder reranker |
 | **Media** | Manim, edge-tts, Playwright, ffmpeg |
 | **Data & Auth** | MongoDB Atlas, Firebase Auth, Backblaze B2 (presigned URLs) |
